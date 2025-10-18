@@ -97,8 +97,37 @@ export default function HomeScreen({ navigation }) {
         containerStyle={styles.searchContainer}
         inputContainerStyle={{ backgroundColor: '#fff' }}
         searchIcon={false}
-         clearIcon={false}
+        clearIcon={false}
       />
+
+      {/* --- CATEGORÍAS AGREGADAS --- */}
+      <View style={styles.categoriesContainer}>
+        <Text style={styles.categoriesTitle}>Categorías</Text>
+        <FlatList
+          data={['Todos', 'Restaurante Mexicano', 'Cafetería', 'Servicios del Hogar']}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.categoryButton}
+              onPress={() => {
+                if (item === 'Todos') {
+                  setFilteredBusinesses(businesses);
+                } else {
+                  setFilteredBusinesses(
+                    businesses.filter((b) =>
+                      b.category.toLowerCase().includes(item.toLowerCase())
+                    )
+                  );
+                }
+              }}
+            >
+              <Text style={styles.categoryButtonText}>{item}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
 
       <FlatList
         data={filteredBusinesses}
@@ -130,7 +159,6 @@ const styles = StyleSheet.create({
   listContainer: {
     padding: 10,
     paddingHorizontal: 18,
-
   },
   cardContainer: {
     backgroundColor: '#e9967a',
@@ -141,7 +169,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
-    
   },
   cardImage: {
     width: '100%',
@@ -161,5 +188,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 4,
+  },
+  categoriesContainer: {
+    paddingHorizontal: 18,
+    marginBottom: 10,
+  },
+  categoriesTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#333',
+  },
+  categoryButton: {
+    backgroundColor: '#f4a460',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    color: '#fff',
   },
 });
