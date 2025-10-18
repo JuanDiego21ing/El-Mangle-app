@@ -1,0 +1,130 @@
+import React, { useState, useEffect } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  SafeAreaView,
+  Image,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
+
+// --- DATOS DE EJEMPLO ---
+const MOCK_BUSINESSES = [
+  {
+    id: '1',
+    name: 'Taquería El Califa',
+    category: 'Restaurante Mexicano',
+    mainImageUrl: 'https://placehold.co/600x400/E94F37/FFFFFF?text=Tacos',
+    address: 'Av. Insurgentes Sur 123',
+  },
+  {
+    id: '2',
+    name: 'Café de la Esquina',
+    category: 'Cafetería',
+    mainImageUrl: 'https://placehold.co/600x400/393E41/FFFFFF?text=Café',
+    address: 'Calle Madero 45',
+  },
+  {
+    id: '3',
+    name: 'Reparaciones "El Manitas"',
+    category: 'Servicios del Hogar',
+    mainImageUrl: 'https://placehold.co/600x400/F6F7EB/333333?text=Servicios',
+    address: 'Callejón de la Herramienta 7',
+  },
+];
+
+
+export default function HomeScreen({ navigation }) {
+  const [businesses, setBusinesses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Simulación de carga de datos
+    setTimeout(() => {
+      setBusinesses(MOCK_BUSINESSES);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007BFF" />
+      </View>
+    );
+  }
+
+  const BusinessCard = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.cardContainer}
+      onPress={() => navigation.navigate('BusinessDetail', { 
+        businessId: item.id,
+        businessName: item.name,
+        businessData: item
+      })}
+    >
+      <Image source={{ uri: item.mainImageUrl }} style={styles.cardImage} />
+      <View style={styles.cardTextContainer}>
+        <Text style={styles.cardTitle}>{item.name}</Text>
+        <Text style={styles.cardCategory}>{item.category}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={businesses}
+        renderItem={BusinessCard}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContainer}
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F4F6F8',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listContainer: {
+    padding: 16,
+  },
+  cardContainer: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  cardImage: {
+    width: '100%',
+    height: 180,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  cardTextContainer: {
+    padding: 12,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  cardCategory: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+});

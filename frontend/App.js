@@ -1,52 +1,42 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+
+// Importaciones de React Navigation
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Importa las pantallas desde la carpeta de componentes
+import HomeScreen from './components/HomeScreen';
+import BusinessDetailScreen from './components/BusinessDetailScreen';
+
+// --- CONFIGURACIÓN DE NAVEGACIÓN ---
+const Stack = createNativeStackNavigator();
 
 export default function App() {
- 
-  const [mensaje, setMensaje] = useState('Cargando...');
-
-
-  useEffect(() => {
-   
-    const ipAddress = 'http://10.218.231.246:3000'; 
-    
-    fetch(ipAddress)
-      .then(response => {
-        
-        if (!response.ok) {
-          throw new Error('La respuesta de la red no fue exitosa');
-        }
-        return response.text();
-      })
-      .then(data => {
-        
-        setMensaje(data);
-      })
-      .catch(error => {
-       
-        console.error('Error al conectar:', error);
-        setMensaje('Error: No se pudo conectar con el servidor.');
-      });
-  }, []); 
-
- 
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>{mensaje}</Text>
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#FFFFFF',
+          },
+          headerTintColor: '#333',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      >
+        <Stack.Screen 
+          name="Home" 
+          component={HomeScreen} 
+          options={{ title: 'Directorio de Negocios' }} 
+        />
+        <Stack.Screen 
+          name="BusinessDetail" 
+          component={BusinessDetailScreen} 
+          // El título de la pantalla de detalle se pone dinámicamente
+          options={({ route }) => ({ title: route.params.businessName })}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  text: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-});
