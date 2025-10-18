@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SearchBar } from 'react-native-elements';
 import {
   StyleSheet,
   Text,
@@ -35,18 +36,28 @@ const MOCK_BUSINESSES = [
   },
 ];
 
-
 export default function HomeScreen({ navigation }) {
   const [businesses, setBusinesses] = useState([]);
+  const [filteredBusinesses, setFilteredBusinesses] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulación de carga de datos
     setTimeout(() => {
       setBusinesses(MOCK_BUSINESSES);
+      setFilteredBusinesses(MOCK_BUSINESSES);
       setLoading(false);
     }, 1000);
   }, []);
+
+  const handleSearch = (text) => {
+    setSearch(text);
+    const filtered = businesses.filter((item) =>
+      item.name.toLowerCase().includes(text.toLowerCase()) ||
+      item.category.toLowerCase().includes(text.toLowerCase())
+    );
+    setFilteredBusinesses(filtered);
+  };
 
   if (loading) {
     return (
@@ -57,13 +68,15 @@ export default function HomeScreen({ navigation }) {
   }
 
   const BusinessCard = ({ item }) => (
-    <TouchableOpacity 
+    <TouchableOpacity
       style={styles.cardContainer}
-      onPress={() => navigation.navigate('BusinessDetail', { 
-        businessId: item.id,
-        businessName: item.name,
-        businessData: item
-      })}
+      onPress={() =>
+        navigation.navigate('BusinessDetail', {
+          businessId: item.id,
+          businessName: item.name,
+          businessData: item,
+        })
+      }
     >
       <Image source={{ uri: item.mainImageUrl }} style={styles.cardImage} />
       <View style={styles.cardTextContainer}>
@@ -75,8 +88,20 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <SearchBar
+        placeholder="Buscar negocio"
+        onChangeText={handleSearch}
+        value={search}
+        lightTheme
+        round
+        containerStyle={styles.searchContainer}
+        inputContainerStyle={{ backgroundColor: '#fff' }}
+        searchIcon={false}
+         clearIcon={false}
+      />
+
       <FlatList
-        data={businesses}
+        data={filteredBusinesses}
         renderItem={BusinessCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
@@ -88,18 +113,27 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F6F8',
+    backgroundColor: '#faebd7',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  searchContainer: {
+    backgroundColor: 'transparent',
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    paddingHorizontal: 18,
+    paddingTop: 80,
+  },
   listContainer: {
-    padding: 16,
+    padding: 10,
+    paddingHorizontal: 18,
+
   },
   cardContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#e9967a',
     borderRadius: 12,
     marginBottom: 16,
     shadowColor: '#000',
@@ -107,6 +141,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 5,
+    
   },
   cardImage: {
     width: '100%',

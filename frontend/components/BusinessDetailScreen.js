@@ -8,9 +8,6 @@ import {
   ScrollView,
 } from 'react-native';
 
-// --- DATOS DE EJEMPLO ---
-// En una app real, esto vendría de una consulta a Firestore
-// usando el businessId.
 const MOCK_PRODUCTS = {
   '1': [
     { id: 'p1', name: 'Taco al Pastor', price: 25.00, imageUrl: 'https://placehold.co/300x200/f8c291/FFFFFF?text=Pastor' },
@@ -21,7 +18,7 @@ const MOCK_PRODUCTS = {
     { id: 'p4', name: 'Espresso Americano', price: 45.00, imageUrl: 'https://placehold.co/300x200/4a4a4a/FFFFFF?text=Café' },
     { id: 'p5', name: 'Croissant de Mantequilla', price: 50.00, imageUrl: 'https://placehold.co/300x200/f39c12/FFFFFF?text=Pan' },
   ],
-  '3': [], // El negocio 3 es de servicios, no tiene productos en este ejemplo
+  '3': [], 
 };
 
 export default function BusinessDetailScreen({ route }) {
@@ -73,8 +70,9 @@ export default function BusinessDetailScreen({ route }) {
 
 const styles = StyleSheet.create({
   container: {
+    padding:10,
     flex: 1,
-    backgroundColor: '#F4F6F8',
+    backgroundColor: '#faebd7',
   },
   detailImage: {
     width: '100%',

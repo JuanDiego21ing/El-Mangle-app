@@ -33,7 +33,6 @@ export default function App() {
         <Stack.Screen 
           name="BusinessDetail" 
           component={BusinessDetailScreen} 
-          // El título de la pantalla de detalle se pone dinámicamente
           options={({ route }) => ({ title: route.params.businessName })}
         />
       </Stack.Navigator>
