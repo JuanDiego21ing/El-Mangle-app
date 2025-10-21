@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image } from 'react-native';
 
 // Importaciones de React Navigation
 import { NavigationContainer } from '@react-navigation/native';
@@ -25,14 +26,21 @@ export default function App() {
           },
         }}
       >
-        <Stack.Screen 
-          name="Home" 
-          component={HomeScreen} 
-          options={{ title: 'Directorio de Negocios' }} 
+        <Stack.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            headerTitle: () => (
+              <Image
+                source={require('./assets/logo.png')}  // ← cambia por la ruta de tu imagen
+                style={{ width: 120, height: 40, resizeMode: 'contain' }}
+              />
+            ),
+          }}
         />
-        <Stack.Screen 
-          name="BusinessDetail" 
-          component={BusinessDetailScreen} 
+        <Stack.Screen
+          name="BusinessDetail"
+          component={BusinessDetailScreen}
           options={({ route }) => ({ title: route.params.businessName })}
         />
       </Stack.Navigator>
