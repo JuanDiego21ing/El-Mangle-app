@@ -8,16 +8,36 @@ import {
   TouchableOpacity,
 } from "react-native";
 
+// --- INICIO DE LA MODIFICACIÓN 1 ---
+import { useAuth } from "./AuthContext"; // Asegúrate que la ruta sea correcta
+// --- FIN DE LA MODIFICACIÓN 1 ---
+
 const logo = require("../assets/logo2.png");
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  // --- INICIO DE LA MODIFICACIÓN 2 ---
+  const { mockLogin } = useAuth(); // Obtenemos la función simulada
+
   const handleLogin = () => {
-    console.log("Intento de login con:", email, password);
-    alert(`Login con email: ${email}`);
+    // console.log("Intento de login con:", email, password);
+    // alert(`Login con email: ${email}`);
+    
+    // 1. (Opcional) Aquí puedes validar que email y password no estén vacíos
+    if (!email || !password) {
+      alert("Por favor, ingresa correo y contraseña.");
+      return;
+    }
+
+    // 2. Llamamos a la función de login simulado del contexto
+    mockLogin();
+
+    // 3. Navegamos al Home. El HomeScreen ya sabrá que estás logueado.
+    navigation.navigate("Home"); 
   };
+  // --- FIN DE LA MODIFICACIÓN 2 ---
 
   return (
     <View style={styles.container}>
@@ -40,7 +60,7 @@ const Login = ({ navigation }) => {
       />
       <TouchableOpacity
         style={styles.entrarBoton}
-        onPress={handleLogin}
+        onPress={handleLogin} // 'handleLogin' ahora está actualizado
         activeOpacity={0.7}
       >
         <Text style={styles.entrarTexto}>Entrar</Text>
