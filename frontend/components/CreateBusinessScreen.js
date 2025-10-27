@@ -12,32 +12,43 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
+// --- (Comentamos las importaciones de Firebase) ---
 //import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-//import { db } from "../firebaseConfig"; // Asegúrate que la ruta a tu config de Firebase sea correcta
+//import { db } from "../firebaseConfig";
 import { useAuth } from "./AuthContext"; // Importamos el hook de autenticación
+
+// --- 1. AÑADIMOS LA LISTA DE CATEGORÍAS ---
+// (Basada en tu MOCK_CATEGORIES, pero sin "Todos" ni "Más")
+const CATEGORIES_LIST = [
+  "Restaurante",
+  "Cafetería",
+  "Servicios",
+  "Compras",
+  "Salud",
+  "Belleza",
+  "Otro", // Añadimos "Otro" por si acaso
+];
 
 // Nombres de los campos que SÍ van en el formulario
 const INITIAL_FORM_STATE = {
   nombre: "",
+  // --- 2. AÑADIMOS 'category' AL ESTADO INICIAL ---
+  category: "", // <-- NUEVO CAMPO
   descripcion: "",
   telefono: "",
   email: "",
   horario: "",
   estado: "Operando", // Valor por defecto
-  mainImageUrl: "", // Coincide con tu HomeScreen (Logo por URL)
-  address: "", // Coincide con tu HomeScreen (Ubicación)
-  // NOTA: 'category' también está en tu HomeScreen. 
-  // Podrías añadir un Picker para 'category' aquí también.
-  // Por ahora, lo omitimos para seguir tu solicitud.
+  mainImageUrl: "",
+  address: "",
 };
 
 export default function CreateBusinessScreen() {
-  const { user } = useAuth(); // Obtenemos el usuario logueado
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [loading, setLoading] = useState(false);
 
-  // Un solo manejador para todos los inputs
   const handleChange = (field, value) => {
     setFormData((prevData) => ({
       ...prevData,
@@ -45,48 +56,44 @@ export default function CreateBusinessScreen() {
     }));
   };
 
+  // --- 4. ACTUALIZAMOS EL 'handleCreateBusiness' (SIMULADO) ---
   const handleCreateBusiness = async () => {
-    // 1. Validación (esto se queda igual)
+    // 4.1 - Añadimos 'category' a la validación
     if (!user) {
       Alert.alert("Error", "Debes iniciar sesión para registrar un negocio.");
       return;
     }
-    if (!formData.nombre || !formData.telefono || !formData.address) {
-      Alert.alert("Campos requeridos", "Por favor, completa nombre, teléfono y ubicación.");
+    if (!formData.nombre || !formData.telefono || !formData.address || !formData.category) {
+      Alert.alert("Campos requeridos", "Por favor, completa nombre, categoría, teléfono y ubicación.");
       return;
     }
 
     setLoading(true);
 
-    // --- INICIO DE LA SIMULACIÓN ---
     try {
-      // Preparamos los datos como si fueran para Firebase
       const businessData = {
-        ...formData,
-        ownerId: user.uid, // ¡El ID del usuario simulado!
-        createdAt: new Date().toISOString(), // Fecha de creación simulada
+        ...formData, // 'category' ya viene incluido aquí
+        ownerId: user.uid,
+        createdAt: new Date().toISOString(),
       };
 
       console.log("--- SIMULANDO GUARDADO DE NEGOCIO ---");
-      console.log(businessData);
+      console.log(businessData); // <-- Ahora 'category' aparecerá aquí
       console.log("--------------------------------------");
       
-      // Simulamos un pequeño retraso (como si estuviera guardando en la red)
       setTimeout(() => {
         setLoading(false);
         Alert.alert("¡Éxito! (Simulado)", "Tu negocio se ha registrado correctamente.");
         
-        // Reseteamos el formulario y volvemos atrás
         setFormData(INITIAL_FORM_STATE);
         navigation.goBack();
-      }, 1500); // 1.5 segundos de espera
+      }, 1500);
 
     } catch (error) {
       setLoading(false);
       console.error("Error simulado: ", error);
       Alert.alert("Error", "Hubo un problema al registrar tu negocio.");
     }
-    // --- FIN DE LA SIMULACIÓN ---
   };
 
   return (
@@ -107,6 +114,25 @@ export default function CreateBusinessScreen() {
             value={formData.nombre}
             onChangeText={(text) => handleChange("nombre", text)}
           />
+
+          {/* --- 3. AÑADIMOS EL PICKER DE CATEGORÍA --- */}
+          <Text style={styles.label}>Categoría *</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={formData.category}
+              onValueChange={(itemValue) => handleChange("category", itemValue)}
+              style={styles.picker}
+            >
+              {/* Opción por defecto */}
+              <Picker.Item label="Selecciona una categoría..." value="" />
+              
+              {/* Mapeamos la lista de categorías */}
+              {CATEGORIES_LIST.map((cat) => (
+                <Picker.Item key={cat} label={cat} value={cat} />
+              ))}
+            </Picker>
+          </View>
+          {/* --- FIN DEL PICKER DE CATEGORÍA --- */}
 
           <Text style={styles.label}>Descripción</Text>
           <TextInput
@@ -149,7 +175,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ej: Av. Insurgentes Sur 123"
-            value={formData.address} // Guardamos como 'address' para coincidir con tu HomeScreen
+            value={formData.address}
             onChangeText={(text) => handleChange("address", text)}
           />
           
@@ -157,7 +183,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="https://ejemplo.com/mi-logo.png"
-            value={formData.mainImageUrl} // Guardamos como 'mainImageUrl' para coincidir con tu HomeScreen
+            value={formData.mainImageUrl}
             onChangeText={(text) => handleChange("mainImageUrl", text)}
             keyboardType="url"
             autoCapitalize="none"
@@ -179,7 +205,7 @@ export default function CreateBusinessScreen() {
           <TouchableOpacity
             style={styles.submitButton}
             onPress={handleCreateBusiness}
-            disabled={loading} // Se deshabilita mientras carga
+            disabled={loading}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -194,10 +220,11 @@ export default function CreateBusinessScreen() {
   );
 }
 
+// (Tus estilos se quedan exactamente igual)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#faebd7", // Color de fondo de tu HomeScreen
+    backgroundColor: "#faebd7",
   },
   container: {
     flex: 1,
@@ -239,7 +266,7 @@ const styles = StyleSheet.create({
   },
   inputMultiline: {
     height: 100,
-    textAlignVertical: "top", // Para que el texto empiece arriba en Android
+    textAlignVertical: "top",
   },
   pickerContainer: {
     backgroundColor: "white",
@@ -251,10 +278,10 @@ const styles = StyleSheet.create({
   },
   picker: {
     width: "100%",
-    height: 50, // Ajustar altura si es necesario
+    height: 50,
   },
   submitButton: {
-    backgroundColor: "#e9967a", // Color principal de tu HomeScreen
+    backgroundColor: "#e9967a",
     paddingVertical: 15,
     borderRadius: 30,
     alignItems: "center",

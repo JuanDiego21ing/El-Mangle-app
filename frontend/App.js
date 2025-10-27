@@ -12,6 +12,7 @@ import Register from "./components/Register";
 // --- 1. AÑADIMOS LA PANTALLA QUE FALTABA ---
 // (Asegúrate que la ruta sea correcta, antes la pusimos en 'screens/')
 import CreateBusinessScreen from "./components/CreateBusinessScreen"; 
+import AddProductScreen from "./components/AddProductScreen";
 
 // --- CONFIGURACIÓN DE NAVEGACIÓN ---
 const Stack = createNativeStackNavigator();
@@ -77,6 +78,12 @@ export default function App() {
             name="CreateBusiness"
             component={CreateBusinessScreen}
             options={{ title: "Registrar Negocio" }}
+          />
+
+          <Stack.Screen
+            name="AddProduct"
+            component={AddProductScreen}
+            options={{ title: "Añadir Producto" }}
           />
 
           {/* --- 4. ELIMINAMOS ESTAS LÍNEAS QUE CAUSAN EL ERROR ---

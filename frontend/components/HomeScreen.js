@@ -25,6 +25,12 @@ const MOCK_BUSINESSES = [
     mainImageUrl:
       "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/11/f1/e7/d4/photo0jpg.jpg?w=900&h=500&s=1",
     address: "Av. Insurgentes Sur 123",
+    // --- NUEVOS DATOS ---
+    ownerId: "usuario-falso-123", // <-- Eres el dueño (tu user.uid simulado)
+    products: [
+      { id: "p1", name: "Burrito Super", price: 120.00, desc: "2 tortillas de harina, carne, queso y aguacate." },
+      { id: "p2", name: "Taco de Asada", price: 25.00, desc: "Taco en tortilla de maíz." },
+    ]
   },
   {
     id: "2",
@@ -33,31 +39,23 @@ const MOCK_BUSINESSES = [
     mainImageUrl:
       "https://media-cdn.tripadvisor.com/media/photo-s/13/4b/ed/f5/photo0jpg.jpg",
     address: "Calle Madero 45",
+    // --- NUEVOS DATOS ---
+    ownerId: "otro-dueño-999", // <-- No eres el dueño
+    products: [
+      { id: "p3", name: "Café Americano", price: 45.00, desc: "Café de grano de la región." },
+    ]
   },
   {
     id: "3",
     name: 'afinaciones el inyector"',
     category: "Servicios",
-    mainImageUrl:
-      "https://lh3.googleusercontent.com/proxy/FX0z3o5b4RAwAt5afoLiemWkCZbMNjYL9UYHyUJ-5YIFy4VTufkYKaWgRjLVh-FX-GUbMjQWTDoL1pn4g11dJZY1hNMVoviIyh7oCFRQ83PBHqd69kDm__TJdkYmSToBKeP18mbYYKxQ1TM52uiTjHP96tSYOjfzpNZwcg=s1360-w1360-h1020-rw",
+    mainImageUrl: "https://lh3.googleusercontent.com/proxy/FX0z3o5b4RAwAt5afoLiemWkCZbMNjYL9UYHyUJ-5YIFy4VTufkYKaWgRjLVh-FX-GUbMjQWTDoL1pn4g11dJZY1hNMVoviIyh7oCFRQ83PBHqd69kDm__TJdkYmSToBKeP18mbYYKxQ1TM52uiTjHP96tSYOjfzpNZwcg=s1360-w1360-h1020-rw",
     address: "Callejón de la Herramienta 7",
+    // --- NUEVOS DATOS ---
+    ownerId: "otro-dueño-999",
+    products: [] // Sin productos aún
   },
-  {
-    id: "4",
-    name: "Oh la la BEAUTY LAB",
-    category: "Belleza",
-    mainImageUrl:
-      "https://lh3.googleusercontent.com/gps-cs-s/AC9h4npM-YZiu0Njv7TPf7y3RWUxK9qNeKtOH2tbj3juSqaoBSpTuDqGX38DlooOxMVpENjwAoh_vLHrEyjHVSbDkiKAW6kkkqyInIl1UycN2nBkFYNDRi1BOrP1TGB-u1ippPfG2fs=s1360-w1360-h1020-rw",
-    address: "Av. Principal 456",
-  },
-  {
-    id: "5",
-    name: "Farmacia La Paz",
-    category: "Salud",
-    mainImageUrl:
-      "https://lh3.googleusercontent.com/p/AF1QipPvRvN4ieAcy3_ZE24dvCCwaXzCd1cwYgjlcyDH=s1360-w1360-h1020-rw",
-    address: "Calle de la Salud 10",
-  },
+  // ... (puedes agregar ownerId y products a los demás) ...
 ];
 
 const MOCK_CATEGORIES = [

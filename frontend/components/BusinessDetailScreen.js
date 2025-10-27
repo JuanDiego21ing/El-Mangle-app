@@ -1,147 +1,108 @@
-import React, { useState, useEffect } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  Image,
-  ActivityIndicator,
-  ScrollView,
+// components/BusinessDetailScreen.js
+import React from 'react';
+import { 
+  StyleSheet, 
+  Text, 
+  View, 
+  SafeAreaView, 
+  ScrollView, 
+  Image, 
+  TouchableOpacity,
+  FlatList 
 } from 'react-native';
+import { useAuth } from './AuthContext'; // Para saber quién está logueado
 
-const MOCK_PRODUCTS = {
-  '1': [
-    { id: 'p1', name: 'Taco al Pastor', price: 25.00, imageUrl: 'https://placehold.co/300x200/f8c291/FFFFFF?text=Pastor' },
-    { id: 'p2', name: 'Gringa de Sirloin', price: 65.00, imageUrl: 'https://placehold.co/300x200/e55039/FFFFFF?text=Gringa' },
-    { id: 'p3', name: 'Agua de Horchata', price: 30.00, imageUrl: 'https://placehold.co/300x200/ffffff/333333?text=Agua' },
-  ],
-  '2': [
-    { id: 'p4', name: 'Espresso Americano', price: 45.00, imageUrl: 'https://placehold.co/300x200/4a4a4a/FFFFFF?text=Café' },
-    { id: 'p5', name: 'Croissant de Mantequilla', price: 50.00, imageUrl: 'https://placehold.co/300x200/f39c12/FFFFFF?text=Pan' },
-  ],
-  '3': [], 
-};
+export default function BusinessDetailScreen({ route, navigation }) {
+  const { user } = useAuth(); // Obtenemos nuestro usuario simulado
+  
+  // Obtenemos los datos del negocio que HomeScreen nos pasó
+  const { businessData } = route.params;
 
-export default function BusinessDetailScreen({ route }) {
-  // Recibimos los parámetros pasados desde HomeScreen
-  const { businessId, businessData } = route.params;
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // --- ¡LA LÓGICA CLAVE! ---
+  // Checamos si el 'user' actual es el dueño de este negocio
+  const isOwner = user && businessData.ownerId === user.uid;
 
-  useEffect(() => {
-    // Simulación de carga de productos para este negocio específico
-    setTimeout(() => {
-      setProducts(MOCK_PRODUCTS[businessId] || []);
-      setLoading(false);
-    }, 500);
-  }, [businessId]);
+  // Función para renderizar cada producto
+  const renderProduct = ({ item }) => (
+    <View style={styles.productCard}>
+      {/* (Aquí podrías poner la imagen del producto) */}
+      <View style={styles.productInfo}>
+        <Text style={styles.productName}>{item.name}</Text>
+        <Text style={styles.productDesc}>{item.desc}</Text>
+      </View>
+      <Text style={styles.productPrice}>${item.price.toFixed(2)}</Text>
+    </View>
+  );
 
   return (
-    <ScrollView style={styles.container}>
-      <Image source={{ uri: businessData.mainImageUrl }} style={styles.detailImage} />
-      <View style={styles.detailContentContainer}>
-        <Text style={styles.detailTitle}>{businessData.name}</Text>
-        <Text style={styles.detailAddress}>{businessData.address}</Text>
-        <Text style={styles.detailCategory}>{businessData.category}</Text>
-        
-        <View style={styles.separator} />
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView>
+        <Image source={{ uri: businessData.mainImageUrl }} style={styles.mainImage} />
+        <View style={styles.infoContainer}>
+          <Text style={styles.title}>{businessData.name}</Text>
+          <Text style={styles.category}>{businessData.category}</Text>
+          <Text style={styles.address}>{businessData.address}</Text>
+          {/* (Aquí puedes agregar más detalles del negocio: horario, tel, etc.) */}
+        </View>
 
-        <Text style={styles.productsTitle}>Productos y Servicios</Text>
-        {loading ? (
-          <ActivityIndicator size="small" color="#333" />
-        ) : (
-          products.length > 0 ? (
-            products.map(product => (
-              <View key={product.id} style={styles.productCard}>
-                <Image source={{ uri: product.imageUrl }} style={styles.productImage} />
-                <View style={styles.productInfo}>
-                    <Text style={styles.productName}>{product.name}</Text>
-                    <Text style={styles.productPrice}>${product.price.toFixed(2)}</Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.noProductsText}>Este negocio no tiene productos registrados.</Text>
-          )
-        )}
-      </View>
-    </ScrollView>
+        <View style={styles.productsContainer}>
+          <Text style={styles.sectionTitle}>Productos y Servicios</Text>
+
+          {/* --- ¡BOTÓN CONDICIONAL! --- */}
+          {/* Solo si eres el dueño, muestras el botón de "Añadir" */}
+          {isOwner && (
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => navigation.navigate('AddProduct', { businessId: businessData.id })}
+            >
+              <Text style={styles.addButtonText}>+ Añadir Producto/Servicio</Text>
+            </TouchableOpacity>
+          )}
+
+          <FlatList
+            data={businessData.products}
+            renderItem={renderProduct}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false} // Para que no haya scroll anidado
+            ListEmptyComponent={() => (
+              <Text style={styles.emptyText}>Este negocio aún no tiene productos registrados.</Text>
+            )}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+// --- ESTILOS ---
 const styles = StyleSheet.create({
-  container: {
-    padding:10,
-    flex: 1,
-    backgroundColor: '#faebd7',
+  safeArea: { flex: 1, backgroundColor: '#FFF' },
+  mainImage: { width: '100%', height: 250 },
+  infoContainer: { padding: 20, borderBottomWidth: 1, borderColor: '#EEE' },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#333' },
+  category: { fontSize: 16, color: '#e9967a', fontWeight: '500', marginTop: 4 },
+  address: { fontSize: 16, color: '#666', marginTop: 10 },
+  productsContainer: { padding: 20 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  addButton: {
+    backgroundColor: '#e9967a', // Tu color principal
+    padding: 12,
+    borderRadius: 30,
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  detailImage: {
-    width: '100%',
-    height: 250,
-  },
-  detailContentContainer: {
-    padding: 20,
-  },
-  detailTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#222',
-    marginBottom: 8,
-  },
-  detailAddress: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 4,
-  },
-  detailCategory: {
-    fontSize: 16,
-    color: '#007BFF',
-    fontWeight: '600',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginVertical: 20,
-  },
-  productsTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
+  addButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
   productCard: {
     flexDirection: 'row',
-    backgroundColor: 'white',
+    backgroundColor: '#FAFAFA',
     borderRadius: 10,
-    padding: 10,
+    padding: 15,
     marginBottom: 10,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
   },
-  productImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-  },
-  productInfo: {
-      marginLeft: 15,
-      flex: 1,
-  },
-  productName: {
-      fontSize: 16,
-      fontWeight: '600',
-  },
-  productPrice: {
-      fontSize: 15,
-      color: '#4CAF50',
-      marginTop: 4,
-  },
-  noProductsText: {
-    textAlign: 'center',
-    color: '#888',
-    marginTop: 20,
-  }
+  productInfo: { flex: 1, marginRight: 10 },
+  productName: { fontSize: 16, fontWeight: 'bold', color: '#444' },
+  productDesc: { fontSize: 14, color: '#777', marginTop: 4 },
+  productPrice: { fontSize: 16, fontWeight: 'bold', color: '#e9967a' },
+  emptyText: { textAlign: 'center', color: '#888', fontStyle: 'italic', padding: 20 }
 });
