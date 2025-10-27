@@ -12,13 +12,13 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
-// --- (Comentamos las importaciones de Firebase) ---
-//import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-//import { db } from "../firebaseConfig";
-import { useAuth } from "./AuthContext"; // Importamos el hook de autenticación
 
-// --- 1. AÑADIMOS LA LISTA DE CATEGORÍAS ---
-// (Basada en tu MOCK_CATEGORIES, pero sin "Todos" ni "Más")
+// --- INICIO DE LA MODIFICACIÓN (¡ACTIVAMOS FIREBASE!) ---
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebaseConfig"; // (Asegúrate que la ruta sea correcta)
+import { useAuth } from "./AuthContext"; // (Asegúrate que la ruta sea correcta)
+// --- FIN DE LA MODIFICACIÓN ---
+
 const CATEGORIES_LIST = [
   "Restaurante",
   "Cafetería",
@@ -26,25 +26,23 @@ const CATEGORIES_LIST = [
   "Compras",
   "Salud",
   "Belleza",
-  "Otro", // Añadimos "Otro" por si acaso
+  "Otro",
 ];
 
-// Nombres de los campos que SÍ van en el formulario
 const INITIAL_FORM_STATE = {
   nombre: "",
-  // --- 2. AÑADIMOS 'category' AL ESTADO INICIAL ---
-  category: "", // <-- NUEVO CAMPO
+  category: "", 
   descripcion: "",
   telefono: "",
   email: "",
   horario: "",
-  estado: "Operando", // Valor por defecto
+  estado: "Operando",
   mainImageUrl: "",
   address: "",
 };
 
 export default function CreateBusinessScreen() {
-  const { user } = useAuth();
+  const { user } = useAuth(); // <-- Este es el USUARIO REAL de Firebase
   const navigation = useNavigation();
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [loading, setLoading] = useState(false);
@@ -56,9 +54,9 @@ export default function CreateBusinessScreen() {
     }));
   };
 
-  // --- 4. ACTUALIZAMOS EL 'handleCreateBusiness' (SIMULADO) ---
+  // --- INICIO DE LA MODIFICACIÓN (FUNCIÓN DE GUARDADO REAL) ---
   const handleCreateBusiness = async () => {
-    // 4.1 - Añadimos 'category' a la validación
+    // 1. Validación (se queda igual)
     if (!user) {
       Alert.alert("Error", "Debes iniciar sesión para registrar un negocio.");
       return;
@@ -70,31 +68,31 @@ export default function CreateBusinessScreen() {
 
     setLoading(true);
 
+    // 2. Usamos el código REAL de Firestore (sin simulación)
     try {
       const businessData = {
-        ...formData, // 'category' ya viene incluido aquí
-        ownerId: user.uid,
-        createdAt: new Date().toISOString(),
+        ...formData,
+        ownerId: user.uid, // <-- El ID del usuario real
+        createdAt: serverTimestamp(), // <-- La fecha del servidor real
       };
 
-      console.log("--- SIMULANDO GUARDADO DE NEGOCIO ---");
-      console.log(businessData); // <-- Ahora 'category' aparecerá aquí
-      console.log("--------------------------------------");
+      // 3. Añadimos el documento a la colección 'businesses' en Firestore
+      const docRef = await addDoc(collection(db, "businesses"), businessData);
+
+      setLoading(false);
+      // 4. Mensaje de éxito REAL
+      Alert.alert("¡Éxito!", "Tu negocio se ha registrado correctamente.");
       
-      setTimeout(() => {
-        setLoading(false);
-        Alert.alert("¡Éxito! (Simulado)", "Tu negocio se ha registrado correctamente.");
-        
-        setFormData(INITIAL_FORM_STATE);
-        navigation.goBack();
-      }, 1500);
+      setFormData(INITIAL_FORM_STATE);
+      navigation.goBack();
 
     } catch (error) {
       setLoading(false);
-      console.error("Error simulado: ", error);
+      console.error("Error al crear negocio: ", error);
       Alert.alert("Error", "Hubo un problema al registrar tu negocio.");
     }
   };
+  // --- FIN DE LA MODIFICACIÓN ---
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -115,7 +113,6 @@ export default function CreateBusinessScreen() {
             onChangeText={(text) => handleChange("nombre", text)}
           />
 
-          {/* --- 3. AÑADIMOS EL PICKER DE CATEGORÍA --- */}
           <Text style={styles.label}>Categoría *</Text>
           <View style={styles.pickerContainer}>
             <Picker
@@ -123,16 +120,14 @@ export default function CreateBusinessScreen() {
               onValueChange={(itemValue) => handleChange("category", itemValue)}
               style={styles.picker}
             >
-              {/* Opción por defecto */}
               <Picker.Item label="Selecciona una categoría..." value="" />
-              
-              {/* Mapeamos la lista de categorías */}
               {CATEGORIES_LIST.map((cat) => (
                 <Picker.Item key={cat} label={cat} value={cat} />
               ))}
             </Picker>
           </View>
-          {/* --- FIN DEL PICKER DE CATEGORÍA --- */}
+          
+          {/* ... (El resto de tus TextInput para descripción, teléfono, etc. se queda igual) ... */}
 
           <Text style={styles.label}>Descripción</Text>
           <TextInput
@@ -201,7 +196,6 @@ export default function CreateBusinessScreen() {
             </Picker>
           </View>
 
-          {/* Botón de envío */}
           <TouchableOpacity
             style={styles.submitButton}
             onPress={handleCreateBusiness}

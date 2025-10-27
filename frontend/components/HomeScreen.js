@@ -3,61 +3,24 @@ import {
   StyleSheet,
   Text,
   View,
+  SectionList, // <-- 1. CAMBIAMOS FlatList por SectionList
   FlatList,
   SafeAreaView,
   Image,
   ActivityIndicator,
   TouchableOpacity,
-  TextInput, // Importamos TextInput para la barra de búsqueda personalizada
+  TextInput,
+  Alert, // <-- Para manejar errores
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // Importamos los íconos
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "./AuthContext"; // Para saber quién es el usuario
+import { signOut } from 'firebase/auth';
+import { auth, db } from '../firebaseConfig'; // <-- 2. Importamos la BD REAL
+import { collection, query, onSnapshot } from "firebase/firestore"; // <-- 3. Funciones de Firestore
 
-// --- INICIO DE LA MODIFICACIÓN 1 (Importar el hook) ---
-import { useAuth } from "./AuthContext"; // Asegúrate que la ruta sea correcta
-// --- FIN DE LA MODIFICACIÓN 1 ---
+// --- YA NO NECESITAMOS MOCK_BUSINESSES (borrado) ---
 
-// --- DATOS DE EJEMPLO ---
-const MOCK_BUSINESSES = [
-  {
-    id: "1",
-    name: "Taquería El Super Burro",
-    category: "Restaurante",
-    mainImageUrl:
-      "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/11/f1/e7/d4/photo0jpg.jpg?w=900&h=500&s=1",
-    address: "Av. Insurgentes Sur 123",
-    // --- NUEVOS DATOS ---
-    ownerId: "usuario-falso-123", // <-- Eres el dueño (tu user.uid simulado)
-    products: [
-      { id: "p1", name: "Burrito Super", price: 120.00, desc: "2 tortillas de harina, carne, queso y aguacate." },
-      { id: "p2", name: "Taco de Asada", price: 25.00, desc: "Taco en tortilla de maíz." },
-    ]
-  },
-  {
-    id: "2",
-    name: "Café DOCECUARENTA",
-    category: "Cafetería",
-    mainImageUrl:
-      "https://media-cdn.tripadvisor.com/media/photo-s/13/4b/ed/f5/photo0jpg.jpg",
-    address: "Calle Madero 45",
-    // --- NUEVOS DATOS ---
-    ownerId: "otro-dueño-999", // <-- No eres el dueño
-    products: [
-      { id: "p3", name: "Café Americano", price: 45.00, desc: "Café de grano de la región." },
-    ]
-  },
-  {
-    id: "3",
-    name: 'afinaciones el inyector"',
-    category: "Servicios",
-    mainImageUrl: "https://lh3.googleusercontent.com/proxy/FX0z3o5b4RAwAt5afoLiemWkCZbMNjYL9UYHyUJ-5YIFy4VTufkYKaWgRjLVh-FX-GUbMjQWTDoL1pn4g11dJZY1hNMVoviIyh7oCFRQ83PBHqd69kDm__TJdkYmSToBKeP18mbYYKxQ1TM52uiTjHP96tSYOjfzpNZwcg=s1360-w1360-h1020-rw",
-    address: "Callejón de la Herramienta 7",
-    // --- NUEVOS DATOS ---
-    ownerId: "otro-dueño-999",
-    products: [] // Sin productos aún
-  },
-  // ... (puedes agregar ownerId y products a los demás) ...
-];
-
+// (Tus MOCK_CATEGORIES se quedan igual)
 const MOCK_CATEGORIES = [
   { id: "1", name: "Todos", icon: "apps-outline" },
   { id: "2", name: "Restaurante", icon: "restaurant-outline" },
@@ -72,100 +35,168 @@ const MOCK_CATEGORIES = [
 const NUM_COLUMNS = 4;
 
 export default function HomeScreen({ navigation }) {
-  // --- INICIO DE LA MODIFICACIÓN 2 (Obtener el usuario) ---
-  const { user, mockLogout } = useAuth(); // 'user' será null si no hay sesión, o el objeto de usuario si la hay
-  // --- FIN DE LA MODIFICACIÓN 2 ---
-
-  const [businesses, setBusinesses] = useState([]);
-  const [filteredBusinesses, setFilteredBusinesses] = useState([]);
-  const [search, setSearch] = useState("");
+  const { user } = useAuth(); // Obtenemos el usuario REAL
+  
+  // --- 4. NUEVOS ESTADOS PARA LOS DATOS ---
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
+  
+  // 'allBusinesses' guarda la lista COMPLETA de Firestore
+  const [allBusinesses, setAllBusinesses] = useState([]);
+  
+  // 'filteredBusinesses' guarda la lista DESPUÉS de aplicar filtros/búsqueda
+  const [filteredBusinesses, setFilteredBusinesses] = useState([]);
+  
+  // 'sectionedData' guarda los datos formateados para la SectionList
+  const [sectionedData, setSectionedData] = useState([]);
 
+
+  // --- 5. USEEFFECT PARA LEER DATOS DE FIRESTORE EN TIEMPO REAL ---
   useEffect(() => {
-    setTimeout(() => {
-      setBusinesses(MOCK_BUSINESSES);
-      setFilteredBusinesses(MOCK_BUSINESSES);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    setLoading(true);
+    // Creamos una consulta a la colección "businesses"
+    const q = query(collection(db, "businesses"));
 
+    // onSnapshot es un "oyente" que se actualiza en tiempo real
+    // cada vez que algo cambia en la base de datos
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const businessesFromDB = [];
+      querySnapshot.forEach((doc) => {
+        businessesFromDB.push({ ...doc.data(), id: doc.id });
+      });
+      
+      setAllBusinesses(businessesFromDB); // Guardamos la lista completa
+      setFilteredBusinesses(businessesFromDB); // Inicialmente, la lista filtrada es igual
+      setLoading(false);
+    }, (error) => {
+      console.error("Error al obtener negocios: ", error);
+      Alert.alert("Error", "No se pudieron cargar los negocios.");
+      setLoading(false);
+    });
+
+    // Limpiamos el "oyente" cuando el usuario sale de la pantalla
+    return () => unsubscribe();
+  }, []); // El array vacío [] asegura que esto solo se ejecute 1 vez
+
+  // --- 6. USEEFFECT PARA FILTRAR Y SEPARAR EN SECCIONES ---
+  // Este efecto se re-ejecuta CADA VEZ que el usuario (des)loguea o
+  // la lista de 'filteredBusinesses' cambia (por búsqueda o categoría).
+  useEffect(() => {
+    let businessesToSection = [...filteredBusinesses]; // Empezamos con la lista filtrada
+
+    // Aplicamos filtro de BÚSQUEDA
+    if (search) {
+      businessesToSection = businessesToSection.filter((item) =>
+        item.nombre.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Aplicamos filtro de CATEGORÍA
+    if (selectedCategory !== "Todos") {
+      businessesToSection = businessesToSection.filter(
+        (b) => b.category === selectedCategory
+      );
+    }
+    
+    // Ahora, separamos en secciones
+    if (!user) {
+      // Si no hay usuario, todos van a una sección
+      setSectionedData([
+        { title: "Negocios Populares", data: businessesToSection }
+      ]);
+    } else {
+      // Si hay usuario, separamos en "míos" y "otros"
+      const myBusinesses = [];
+      const otherBusinesses = [];
+      
+      businessesToSection.forEach(business => {
+        if (business.ownerId === user.uid) {
+          myBusinesses.push(business);
+        } else {
+          otherBusinesses.push(business);
+        }
+      });
+
+      const sections = [];
+      if (myBusinesses.length > 0) {
+        sections.push({ title: 'Mis Negocios', data: myBusinesses });
+      }
+      if (otherBusinesses.length > 0) {
+        sections.push({ title: 'Otros Negocios', data: otherBusinesses });
+      }
+      setSectionedData(sections);
+    }
+
+  }, [filteredBusinesses, user, search, selectedCategory]); // <-- Dependencias
+
+  
+  // --- 7. ACTUALIZAMOS LAS FUNCIONES DE FILTRO ---
+  // Ya no filtran, solo actualizan el estado. El useEffect de arriba hará el trabajo.
   const handleSearch = (text) => {
     setSearch(text);
-    const filtered = businesses.filter((item) =>
-      item.name.toLowerCase().includes(text.toLowerCase())
-    );
-    setFilteredBusinesses(filtered);
+    // Al buscar, reseteamos la categoría
     setSelectedCategory("Todos");
   };
 
   const handleCategoryPress = (categoryName) => {
     setSelectedCategory(categoryName);
-    if (categoryName === "Todos") {
-      setFilteredBusinesses(businesses);
-    } else {
-      setFilteredBusinesses(
-        businesses.filter((b) => b.category === categoryName)
-      );
-    }
+    // Al filtrar, reseteamos la búsqueda
+    setSearch("");
   };
 
-  if (loading) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#e9967a" />
-      </View>
-    );
-  }
+  // --- (Función de Logout REAL, ya la tenías) ---
+  const handleLogout = () => {
+    signOut(auth).catch((error) => Alert.alert("Error", error.message));
+  };
 
+
+  // --- (renderBusinessCard se queda igual) ---
   const renderBusinessCard = ({ item }) => (
     <TouchableOpacity
       style={styles.cardContainer}
       onPress={() =>
         navigation.navigate("BusinessDetail", {
-          businessId: item.id,
-          businessName: item.name,
+          // Pasamos el objeto 'item' completo
           businessData: item,
+          // Pasamos los params que ya tenías (por si BusinessDetail los usa)
+          businessId: item.id, 
+          businessName: item.nombre,
         })
       }
     >
       <Image source={{ uri: item.mainImageUrl }} style={styles.cardImage} />
       <View style={styles.cardTextContainer}>
-        <Text style={styles.cardTitle}>{item.name}</Text>
+        <Text style={styles.cardTitle}>{item.nombre}</Text>
         <Text style={styles.cardCategory}>{item.category}</Text>
       </View>
     </TouchableOpacity>
   );
 
+  // --- (renderHeader se queda igual) ---
   const renderHeader = () => (
     <>
-      {/* --- INICIO DE LA MODIFICACIÓN 3 (Botones condicionales) --- */}
+      {/* (Botones de Login/Logout) */}
       <View style={styles.authButtonContainer}>
         {user ? (
-          // --- INICIO DE LA MODIFICACIÓN ---
-          // Usamos un Fragment (<>) para poder mostrar dos botones
           <>
             <TouchableOpacity
               style={styles.authButton}
-              onPress={() => navigation.navigate("CreateBusiness")} 
+              onPress={() => navigation.navigate("CreateBusiness")}
             >
               <Text style={styles.authButtonText}>+ Registrar mi Negocio</Text>
             </TouchableOpacity>
-
-            {/* Este es el botón de Cerrar Sesión que añadimos */}
             <TouchableOpacity
-              style={[styles.authButton, styles.logoutButton]} // Asigna el estilo extra
-              onPress={mockLogout} // Llama a la función del contexto
+              style={[styles.authButton, styles.logoutButton]}
+              onPress={handleLogout}
             >
               <Text style={styles.authButtonText}>Cerrar Sesión</Text>
             </TouchableOpacity>
           </>
-          // --- FIN DE LA MODIFICACIÓN ---
         ) : (
-          // Esta parte queda exactamente igual
           <TouchableOpacity
             style={styles.authButton}
-            onPress={() => navigation.navigate("Login")} 
+            onPress={() => navigation.navigate("Login")}
           >
             <Text style={styles.authButtonText}>
               Iniciar Sesión / Registrarse
@@ -173,17 +204,11 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         )}
       </View>
-      {/* --- FIN DE LA MODIFICACIÓN 3 --- */}
-
-      {/* Tu código de búsqueda (intacto) */}
+      
+      {/* (Barra de Búsqueda) */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
-          <Ionicons
-            name="search"
-            size={20}
-            color="#888"
-            style={styles.searchIcon}
-          />
+          <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
           <TextInput
             placeholder="Buscar negocio..."
             onChangeText={handleSearch}
@@ -193,13 +218,13 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* Tu código de categorías (intacto) */}
+      {/* (Categorías) */}
       <View style={styles.categoriesCard}>
         <FlatList
           data={MOCK_CATEGORIES}
           keyExtractor={(item) => item.id}
           numColumns={NUM_COLUMNS}
-          scrollEnabled={false} // Deshabilitamos scroll, ya es parte del header
+          scrollEnabled={false}
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.categoryItem}
@@ -224,24 +249,45 @@ export default function HomeScreen({ navigation }) {
           )}
         />
       </View>
-      <Text style={styles.businessListTitle}>Negocios Populares</Text>
+      {/* (Quitamos el título "Negocios Populares" de aquí, porque ahora lo pone la sección) */}
     </>
   );
 
+  // --- (Spinner de Carga, se queda igual) ---
+  if (loading && allBusinesses.length === 0) { // Mostramos si está cargando Y no hay datos
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#e9967a" />
+      </View>
+    );
+  }
+
+  // --- 8. CAMBIAMOS EL RETURN FINAL A SECTIONLIST ---
   return (
     <SafeAreaView style={styles.container}>
-      <FlatList
-        data={filteredBusinesses}
-        renderItem={renderBusinessCard}
+      <SectionList
+        sections={sectionedData} // <-- Usa las secciones
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
+        renderItem={renderBusinessCard} // <-- Reutiliza tu render de tarjeta
+        ListHeaderComponent={renderHeader} // <-- Reutiliza tu cabecera
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
+        // Función para renderizar el título de CADA sección
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.sectionHeader}>{title}</Text>
+        )}
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No se encontraron negocios</Text>
+            <Text style={styles.emptySubtext}>Intenta ajustar tu búsqueda o filtros.</Text>
+          </View>
+        )}
       />
     </SafeAreaView>
   );
 }
 
+// --- 9. AÑADIMOS/ACTUALIZAMOS ESTILOS ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -253,7 +299,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#faebd7",
   },
-  // --- ESTILOS PARA LA BÚSQUEDA PERSONALIZADA ---
+  // (Estilos de búsqueda, categorías y tarjetas se quedan igual)
   searchContainer: {
     paddingHorizontal: 18,
     paddingTop: 10,
@@ -284,7 +330,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 20,
   },
-  // --- ESTILOS PARA LA NUEVA TARJETA DE CATEGORÍAS ---
   categoriesCard: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -305,14 +350,14 @@ const styles = StyleSheet.create({
   categoryIconContainer: {
     width: 60,
     height: 60,
-    borderRadius: 30, // Círculo perfecto
+    borderRadius: 30,
     backgroundColor: "#faebd7",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
   },
   categoryIconSelected: {
-    backgroundColor: "#e9967a", // Color cuando está seleccionado
+    backgroundColor: "#e9967a",
   },
   categoryText: {
     fontSize: 12,
@@ -320,15 +365,8 @@ const styles = StyleSheet.create({
     color: "#333",
     paddingHorizontal: 2,
   },
-  businessListTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-  },
-  // --- Estilos para las tarjetas de negocios ---
   cardContainer: {
-    backgroundColor: "white", // Un fondo blanco para mejor contraste
+    backgroundColor: "white",
     borderRadius: 12,
     marginBottom: 16,
     shadowColor: "#000",
@@ -356,14 +394,15 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 4,
   },
-  // --- INICIO DE LA MODIFICACIÓN 4 (Estilos para los nuevos botones) ---
+  // (Estilos de botones de Auth se quedan igual)
   authButtonContainer: {
     paddingHorizontal: 18,
-    paddingTop: 15, // Espacio superior
-    paddingBottom: 5, // Espacio antes de la barra de búsqueda
+    paddingTop: 15,
+    paddingBottom: 5,
+    gap: 10,
   },
   authButton: {
-    backgroundColor: "#e9967a", // Usando tu color principal
+    backgroundColor: "#e9967a",
     paddingVertical: 12,
     borderRadius: 30,
     alignItems: "center",
@@ -373,42 +412,37 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  authButtonText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  // --- FIN DE LA MODIFICACIÓN 4 ---
-
-  authButtonContainer: {
-    paddingHorizontal: 18,
-    paddingTop: 15, 
-    paddingBottom: 5, 
-    gap: 10, // <- AÑADE ESTA LÍNEA (para separar los botones)
-  },
-  authButton: {
-    backgroundColor: "#e9967a", 
-    paddingVertical: 12,
-    borderRadius: 30,
-    alignItems: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-
-  // --- AÑADE ESTE NUEVO ESTILO ---
   logoutButton: {
-    backgroundColor: "#888", // Un color diferente para distinguirlo
+    backgroundColor: "#888",
   },
-  // --- FIN DEL CÓDIGO A AÑADIR ---
-
   authButtonText: {
     color: "white",
     fontSize: 16,
     fontWeight: "bold",
   },
-
   
+  // --- ESTILOS NUEVOS ---
+  sectionHeader: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#333",
+    backgroundColor: "#faebd7", // Mismo fondo que la app
+    paddingTop: 15,
+    paddingBottom: 10,
+  },
+  emptyContainer: {
+    marginTop: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: '#777',
+    marginTop: 8,
+  }
 });

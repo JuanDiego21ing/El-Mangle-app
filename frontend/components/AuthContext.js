@@ -1,44 +1,33 @@
-// components/AuthContext.js
+import React, { createContext, useState, useEffect, useContext } from 'react';
+// Importamos el auth REAL desde el archivo que acabas de crear
+import { auth } from '../firebaseConfig'; 
+import { onAuthStateChanged } from 'firebase/auth';
 
-import React, { createContext, useState, useContext } from 'react';
-// ¡Ya no importamos nada de Firebase!
-
-// 1. Crear el Contexto
 const AuthContext = createContext();
 
-// 2. Crear el Proveedor (Provider)
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Por defecto, no hay usuario (null)
-  const [loading, setLoading] = useState(false); // No estamos esperando a Firebase, así que false
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // --- FUNCIONES SIMULADAS ---
-
-  // Llama a esta función desde tu LoginScreen cuando el login sea "exitoso"
-  const mockLogin = () => {
-    console.log("Simulando inicio de sesión...");
-    // Creamos un objeto de usuario falso. 
-    // Lo importante es que 'user' ya no sea 'null'.
-    setUser({ 
-      uid: 'usuario-falso-123', 
-      email: 'prueba@test.com',
+  useEffect(() => {
+    // Este es el "oyente" REAL de Firebase.
+    // Se dispara solo cuando alguien inicia o cierra sesión.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user); // 'null' si no hay sesión, o el objeto 'user'
+      setLoading(false);
     });
-  };
 
-  // Llama a esta función desde un botón de "Cerrar Sesión"
-  const mockLogout = () => {
-    console.log("Simulando cierre de sesión...");
-    setUser(null);
-  };
+    return () => unsubscribe(); // Limpiar el oyente
+  }, []);
 
-  // Pasamos el 'user' y las funciones para simular
+  // Ya no necesitamos 'mockLogin' ni 'mockLogout'
   return (
-    <AuthContext.Provider value={{ user, loading, mockLogin, mockLogout }}>
-      {children}
+    <AuthContext.Provider value={{ user, loading }}>
+      {!loading && children}
     </AuthContext.Provider>
   );
 };
 
-// 3. Crear un "Hook" personalizado para usar el contexto
 export const useAuth = () => {
   return useContext(AuthContext);
 };
