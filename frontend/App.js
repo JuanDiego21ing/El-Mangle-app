@@ -14,6 +14,7 @@ import Register from "./components/Register";
 import CreateBusinessScreen from "./components/CreateBusinessScreen"; 
 import AddProductScreen from "./components/AddProductScreen";
 import EditProductScreen from "./components/EditProductScreen";
+import EditBusinessScreen from "./components/EditBusinessScreen";
 
 // --- CONFIGURACIÓN DE NAVEGACIÓN ---
 const Stack = createNativeStackNavigator();
@@ -91,6 +92,12 @@ export default function App() {
             name="EditProduct"
             component={EditProductScreen}
             options={{ title: "Editar Producto" }}
+          />
+
+          <Stack.Screen
+            name="EditBusiness"
+            component={EditBusinessScreen}
+            options={{ title: "Editar Negocio" }}
           />
 
           {/* --- 4. ELIMINAMOS ESTAS LÍNEAS QUE CAUSAN EL ERROR ---

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, SafeAreaView, ScrollView, 
   Image, TouchableOpacity, FlatList, ActivityIndicator,
-  Alert // <-- 1. Importamos Alert
+  Alert 
 } from 'react-native';
 import { useAuth } from './AuthContext';
 import { db } from '../firebaseConfig';
-// --- 2. Importamos más funciones de Firestore ---
-import { doc, onSnapshot, updateDoc, arrayRemove } from 'firebase/firestore'; 
+// --- 1. Importamos 'deleteDoc' ---
+import { doc, onSnapshot, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore'; 
 
 export default function BusinessDetailScreen({ route, navigation }) {
   const { user } = useAuth();
@@ -22,14 +22,14 @@ export default function BusinessDetailScreen({ route, navigation }) {
       if (doc.exists()) {
         setBusinessData({ ...doc.data(), id: doc.id });
       } else {
-        navigation.goBack();
+        // Si el doc no existe (porque fue borrado), volvemos al Home
+        navigation.navigate("Home");
       }
       setLoading(false);
     });
     return () => unsubscribe();
   }, [businessId]);
   
-  // --- 3. NUEVA FUNCIÓN: Eliminar un producto ---
   const handleDeleteProduct = (productToDelete) => {
     Alert.alert(
       "Eliminar Producto",
@@ -42,14 +42,11 @@ export default function BusinessDetailScreen({ route, navigation }) {
           onPress: async () => {
             try {
               const businessRef = doc(db, "businesses", businessId);
-              // Usamos 'arrayRemove' para quitar el objeto del array en Firestore
               await updateDoc(businessRef, {
                 products: arrayRemove(productToDelete)
               });
-              // El 'onSnapshot' de useEffect se encargará de actualizar la UI
               Alert.alert("Éxito", "Producto eliminado.");
             } catch (error) {
-              console.error("Error al eliminar producto: ", error);
               Alert.alert("Error", "No se pudo eliminar el producto.");
             }
           } 
@@ -57,10 +54,39 @@ export default function BusinessDetailScreen({ route, navigation }) {
       ]
     );
   };
+  
+  // --- 2. NUEVA FUNCIÓN: Eliminar el Negocio (deleteDoc) ---
+  const handleDeleteBusiness = () => {
+    Alert.alert(
+      "Eliminar Negocio",
+      `¿Estás seguro de que quieres eliminar "${businessData.nombre}"? Esta acción no se puede deshacer.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar Definitivamente",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Apunta al documento del negocio
+              const businessRef = doc(db, "businesses", businessId);
+              // Elimina el documento
+              await deleteDoc(businessRef);
+              
+              // onSnapshot detectará el borrado y nos enviará al Home
+              Alert.alert("Éxito", "Negocio eliminado.");
+            } catch (error) {
+              console.error("Error al eliminar negocio: ", error);
+              Alert.alert("Error", "No se pudo eliminar el negocio.");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const isOwner = user && businessData && businessData.ownerId === user.uid;
 
-  // --- 4. ACTUALIZAMOS RENDERPRODUCT ---
+  // (renderProduct se queda igual)
   const renderProduct = ({ item }) => (
     <View style={styles.productCard}>
       <View style={styles.productInfo}>
@@ -69,22 +95,20 @@ export default function BusinessDetailScreen({ route, navigation }) {
       </View>
       <View style={styles.productActions}>
         <Text style={styles.productPrice}>${item.precio.toFixed(2)}</Text>
-        
-        {/* Mostramos botones solo si es el dueño */}
         {isOwner && (
           <View style={styles.buttonGroup}>
             <TouchableOpacity 
               style={styles.editButton}
               onPress={() => navigation.navigate('EditProduct', { 
-                product: item, // Pasamos el producto a editar
-                businessId: businessId // Pasamos el ID del negocio
+                product: item,
+                businessId: businessId 
               })}
             >
               <Text style={styles.buttonText}>Editar</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.deleteButton}
-              onPress={() => handleDeleteProduct(item)} // Llamamos a la función de eliminar
+              onPress={() => handleDeleteProduct(item)}
             >
               <Text style={styles.buttonText}>Eliminar</Text>
             </TouchableOpacity>
@@ -112,6 +136,28 @@ export default function BusinessDetailScreen({ route, navigation }) {
           <Text style={styles.address}>{businessData.address}</Text>
         </View>
 
+        {/* --- 3. NUEVO BLOQUE: Panel de Administración del Negocio --- */}
+        {isOwner && (
+          <View style={styles.adminPanel}>
+            <Text style={styles.adminTitle}>Panel de Dueño</Text>
+            <TouchableOpacity 
+              style={styles.adminButton}
+              onPress={() => navigation.navigate('EditBusiness', { 
+                businessData: businessData // Pasamos todos los datos al editor
+              })}
+            >
+              <Text style={styles.adminButtonText}>Editar Información del Negocio</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.adminButton, styles.adminButtonDelete]}
+              onPress={handleDeleteBusiness}
+            >
+              <Text style={styles.adminButtonText}>Eliminar Negocio</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {/* --- FIN DEL BLOQUE NUEVO --- */}
+
         <View style={styles.productsContainer}>
           <Text style={styles.sectionTitle}>Productos y Servicios</Text>
           
@@ -126,7 +172,7 @@ export default function BusinessDetailScreen({ route, navigation }) {
 
           <FlatList
             data={businessData.products} 
-            renderItem={renderProduct} // 'renderProduct' ahora tiene los botones
+            renderItem={renderProduct}
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
             ListEmptyComponent={() => (
@@ -139,8 +185,9 @@ export default function BusinessDetailScreen({ route, navigation }) {
   );
 }
 
-// --- 5. ACTUALIZAMOS LOS ESTILOS ---
+// --- 4. AÑADIMOS NUEVOS ESTILOS para el panel de admin ---
 const styles = StyleSheet.create({
+  // (Tus estilos existentes: safeArea, center, mainImage, infoContainer... se quedan igual)
   safeArea: { flex: 1, backgroundColor: '#FFF' },
   center: { justifyContent: 'center', alignItems: 'center' },
   mainImage: { width: '100%', height: 250 },
@@ -148,6 +195,37 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: 'bold', color: '#333' },
   category: { fontSize: 16, color: '#e9967a', fontWeight: '500', marginTop: 4 },
   address: { fontSize: 16, color: '#666', marginTop: 10 },
+  
+  // -- Panel de Admin (NUEVO) --
+  adminPanel: {
+    padding: 20,
+    backgroundColor: '#fff8f0',
+    borderBottomWidth: 1,
+    borderColor: '#EEE',
+  },
+  adminTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 15,
+  },
+  adminButton: {
+    backgroundColor: '#007bff', // Azul
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  adminButtonDelete: {
+    backgroundColor: '#dc3545', // Rojo
+  },
+  adminButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  
+  // (Estilos de Productos, botones, etc. se quedan igual)
   productsContainer: { padding: 20 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 15 },
   addButton: {
@@ -171,8 +249,6 @@ const styles = StyleSheet.create({
   productDesc: { fontSize: 14, color: '#777', marginTop: 4 },
   productPrice: { fontSize: 16, fontWeight: 'bold', color: '#e9967a', alignSelf: 'flex-end' },
   emptyText: { textAlign: 'center', color: '#888', fontStyle: 'italic', padding: 20 },
-  
-  // -- Estilos NUEVOS para los botones --
   productActions: {
     alignItems: 'flex-end',
   },
@@ -181,14 +257,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   editButton: {
-    backgroundColor: '#007bff', // Azul
+    backgroundColor: '#007bff',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
     marginRight: 5,
   },
   deleteButton: {
-    backgroundColor: '#dc3545', // Rojo
+    backgroundColor: '#dc3545',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
