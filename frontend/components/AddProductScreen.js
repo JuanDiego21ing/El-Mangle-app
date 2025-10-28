@@ -1,24 +1,21 @@
-// components/AddProductScreen.js
 import React, { useState } from 'react';
 import {
-  StyleSheet,
-  Text,
-  View,
-  SafeAreaView,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
+  StyleSheet, Text, View, SafeAreaView, ScrollView,
+  TextInput, TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+
+// --- INICIO DE LA MODIFICACIÓN (Imports de Firebase) ---
+import { db } from '../firebaseConfig';
+import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+// --- FIN DE LA MODIFICACIÓN ---
 
 const INITIAL_FORM_STATE = {
   nombre: '',
   descripcion: '',
   precio: '',
   imagen: '',
-  estado: 'Disponible', // Valor por defecto
+  estado: 'Disponible',
 };
 
 export default function AddProductScreen({ route, navigation }) {
@@ -27,12 +24,10 @@ export default function AddProductScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (field, value) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [field]: value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [field]: value }));
   };
 
+  // --- INICIO DE LA MODIFICACIÓN (Función de guardado REAL) ---
   const handleSaveProduct = async () => {
     if (!formData.nombre || !formData.precio) {
       Alert.alert('Campos requeridos', 'Por favor, completa nombre y precio.');
@@ -41,33 +36,42 @@ export default function AddProductScreen({ route, navigation }) {
 
     setLoading(true);
 
-    // --- SIMULACIÓN DE GUARDADO ---
-    const newProduct = {
-      ...formData,
-      id: `prod_${Date.now()}`, // ID falso
-      businessId: businessId, // ID del negocio
-      precio: parseFloat(formData.precio) || 0, // Convertir a número
-    };
+    try {
+      // 1. Prepara el nuevo objeto de producto
+      const newProduct = {
+        ...formData,
+        id: `prod_${Date.now()}`, 
+        precio: parseFloat(formData.precio) || 0,
+        
+        // --- ESTA ES LA LÍNEA CORREGIDA ---
+        // Reemplazamos serverTimestamp() por la hora local del dispositivo
+        createdAt: new Date(), 
+        // --- FIN DE LA CORRECCIÓN ---
+      };
 
-    console.log('--- SIMULANDO GUARDADO DE PRODUCTO ---');
-    console.log(newProduct);
-    console.log('------------------------------------');
+      // 2. Apunta al documento EXACTO del negocio
+      const businessRef = doc(db, "businesses", businessId);
 
-    // Simulamos un retraso de red
-    setTimeout(() => {
+      // 3. Usa 'updateDoc' y 'arrayUnion' (esto se queda igual)
+      await updateDoc(businessRef, {
+        products: arrayUnion(newProduct)
+      });
+
       setLoading(false);
-      Alert.alert('¡Éxito! (Simulado)', 'Tu producto se ha registrado.');
-      
-      // NOTA: En un app real, este producto no aparecerá en la pantalla
-      // de detalle hasta que recargues los datos desde la BD.
-      // Por ahora, solo volvemos atrás.
+      Alert.alert('¡Éxito!', 'Tu producto se ha registrado.');
       
       setFormData(INITIAL_FORM_STATE);
-      navigation.goBack();
-    }, 1500);
+      navigation.goBack(); 
+
+    } catch (error) {
+      setLoading(false);
+      console.error("Error al guardar producto: ", error);
+      Alert.alert("Error", "No se pudo guardar el producto.");
+    }
   };
 
   return (
+    // ... (El resto de tu JSX se queda 100% igual) ...
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Añadir Producto/Servicio</Text>
@@ -137,7 +141,7 @@ export default function AddProductScreen({ route, navigation }) {
   );
 }
 
-// Estilos (similares a CreateBusinessScreen)
+// (Tus estilos se quedan 100% igual)
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#faebd7' },
   container: { flex: 1 },

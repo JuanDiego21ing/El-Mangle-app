@@ -12,51 +12,31 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
-
-// --- INICIO DE LA MODIFICACIÓN (¡ACTIVAMOS FIREBASE!) ---
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebaseConfig"; // (Asegúrate que la ruta sea correcta)
-import { useAuth } from "./AuthContext"; // (Asegúrate que la ruta sea correcta)
-// --- FIN DE LA MODIFICACIÓN ---
+import { db } from "../firebaseConfig";
+import { useAuth } from "./AuthContext";
 
+// (CATEGORIES_LIST y INITIAL_FORM_STATE se quedan igual)
 const CATEGORIES_LIST = [
-  "Restaurante",
-  "Cafetería",
-  "Servicios",
-  "Compras",
-  "Salud",
-  "Belleza",
-  "Otro",
+  "Restaurante", "Cafetería", "Servicios", "Compras", "Salud", "Belleza", "Otro",
 ];
 
 const INITIAL_FORM_STATE = {
-  nombre: "",
-  category: "", 
-  descripcion: "",
-  telefono: "",
-  email: "",
-  horario: "",
-  estado: "Operando",
-  mainImageUrl: "",
-  address: "",
+  nombre: "", category: "", descripcion: "", telefono: "", email: "",
+  horario: "", estado: "Operando", mainImageUrl: "", address: "",
 };
 
 export default function CreateBusinessScreen() {
-  const { user } = useAuth(); // <-- Este es el USUARIO REAL de Firebase
+  const { user } = useAuth();
   const navigation = useNavigation();
   const [formData, setFormData] = useState(INITIAL_FORM_STATE);
   const [loading, setLoading] = useState(false);
 
   const handleChange = (field, value) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      [field]: value,
-    }));
+    setFormData((prevData) => ({ ...prevData, [field]: value }));
   };
 
-  // --- INICIO DE LA MODIFICACIÓN (FUNCIÓN DE GUARDADO REAL) ---
   const handleCreateBusiness = async () => {
-    // 1. Validación (se queda igual)
     if (!user) {
       Alert.alert("Error", "Debes iniciar sesión para registrar un negocio.");
       return;
@@ -68,21 +48,20 @@ export default function CreateBusinessScreen() {
 
     setLoading(true);
 
-    // 2. Usamos el código REAL de Firestore (sin simulación)
     try {
       const businessData = {
         ...formData,
-        ownerId: user.uid, // <-- El ID del usuario real
-        createdAt: serverTimestamp(), // <-- La fecha del servidor real
+        ownerId: user.uid,
+        createdAt: serverTimestamp(),
+        // --- INICIO DE LA MODIFICACIÓN ---
+        products: [], // <-- ¡AÑADIMOS ESTO! Creamos el array de productos vacío
+        // --- FIN DE LA MODIFICACIÓN ---
       };
 
-      // 3. Añadimos el documento a la colección 'businesses' en Firestore
-      const docRef = await addDoc(collection(db, "businesses"), businessData);
+      await addDoc(collection(db, "businesses"), businessData);
 
       setLoading(false);
-      // 4. Mensaje de éxito REAL
       Alert.alert("¡Éxito!", "Tu negocio se ha registrado correctamente.");
-      
       setFormData(INITIAL_FORM_STATE);
       navigation.goBack();
 
@@ -92,9 +71,9 @@ export default function CreateBusinessScreen() {
       Alert.alert("Error", "Hubo un problema al registrar tu negocio.");
     }
   };
-  // --- FIN DE LA MODIFICACIÓN ---
 
   return (
+    // ... (El resto de tu JSX se queda 100% igual) ...
     <SafeAreaView style={styles.safeArea}>
       <ScrollView 
         style={styles.container}
@@ -127,8 +106,6 @@ export default function CreateBusinessScreen() {
             </Picker>
           </View>
           
-          {/* ... (El resto de tus TextInput para descripción, teléfono, etc. se queda igual) ... */}
-
           <Text style={styles.label}>Descripción</Text>
           <TextInput
             style={[styles.input, styles.inputMultiline]}
@@ -214,7 +191,7 @@ export default function CreateBusinessScreen() {
   );
 }
 
-// (Tus estilos se quedan exactamente igual)
+// (Tus estilos se quedan 100% igual)
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
