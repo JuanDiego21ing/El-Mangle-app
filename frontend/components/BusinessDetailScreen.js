@@ -1,61 +1,99 @@
-import React, { useState, useEffect } from 'react'; // <-- 1. Importa useState/useEffect
+import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, SafeAreaView, ScrollView, 
-  Image, TouchableOpacity, FlatList, ActivityIndicator 
+  Image, TouchableOpacity, FlatList, ActivityIndicator,
+  Alert // <-- 1. Importamos Alert
 } from 'react-native';
 import { useAuth } from './AuthContext';
-
-// --- INICIO DE LA MODIFICACIÓN (Imports de Firebase) ---
 import { db } from '../firebaseConfig';
-import { doc, onSnapshot } from 'firebase/firestore';
-// --- FIN DE LA MODIFICACIÓN ---
+// --- 2. Importamos más funciones de Firestore ---
+import { doc, onSnapshot, updateDoc, arrayRemove } from 'firebase/firestore'; 
 
 export default function BusinessDetailScreen({ route, navigation }) {
   const { user } = useAuth();
-  
-  // Obtenemos el ID del negocio de los parámetros
   const { businessId } = route.params;
-
-  // --- INICIO DE LA MODIFICACIÓN (Estado en tiempo real) ---
   const [loading, setLoading] = useState(true);
-  // Usamos el 'businessData' que nos pasó HomeScreen como estado inicial
   const [businessData, setBusinessData] = useState(route.params.businessData || null);
 
-  // Este 'useEffect' se conecta a Firestore y escucha cambios
   useEffect(() => {
     setLoading(true);
-    // Apunta al documento exacto del negocio
     const docRef = doc(db, "businesses", businessId);
-
-    // 'onSnapshot' es el oyente en tiempo real
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) {
-        setBusinessData({ ...doc.data(), id: doc.id }); // Actualiza el estado con los nuevos datos
+        setBusinessData({ ...doc.data(), id: doc.id });
       } else {
-        console.log("No se encontró el documento!");
-        navigation.goBack(); // Vuelve si el negocio fue borrado
+        navigation.goBack();
       }
       setLoading(false);
     });
-
-    // Limpia el oyente cuando el usuario sale de la pantalla
     return () => unsubscribe();
-  }, [businessId]); // Se re-ejecuta si el businessId cambia
+  }, [businessId]);
   
-  // --- FIN DE LA MODIFICACIÓN ---
+  // --- 3. NUEVA FUNCIÓN: Eliminar un producto ---
+  const handleDeleteProduct = (productToDelete) => {
+    Alert.alert(
+      "Eliminar Producto",
+      `¿Estás seguro de que quieres eliminar "${productToDelete.nombre}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { 
+          text: "Eliminar", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              const businessRef = doc(db, "businesses", businessId);
+              // Usamos 'arrayRemove' para quitar el objeto del array en Firestore
+              await updateDoc(businessRef, {
+                products: arrayRemove(productToDelete)
+              });
+              // El 'onSnapshot' de useEffect se encargará de actualizar la UI
+              Alert.alert("Éxito", "Producto eliminado.");
+            } catch (error) {
+              console.error("Error al eliminar producto: ", error);
+              Alert.alert("Error", "No se pudo eliminar el producto.");
+            }
+          } 
+        }
+      ]
+    );
+  };
 
-  // (El renderProduct se queda igual)
+  const isOwner = user && businessData && businessData.ownerId === user.uid;
+
+  // --- 4. ACTUALIZAMOS RENDERPRODUCT ---
   const renderProduct = ({ item }) => (
     <View style={styles.productCard}>
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.nombre}</Text>
         <Text style={styles.productDesc}>{item.descripcion}</Text>
       </View>
-      <Text style={styles.productPrice}>${item.precio.toFixed(2)}</Text>
+      <View style={styles.productActions}>
+        <Text style={styles.productPrice}>${item.precio.toFixed(2)}</Text>
+        
+        {/* Mostramos botones solo si es el dueño */}
+        {isOwner && (
+          <View style={styles.buttonGroup}>
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={() => navigation.navigate('EditProduct', { 
+                product: item, // Pasamos el producto a editar
+                businessId: businessId // Pasamos el ID del negocio
+              })}
+            >
+              <Text style={styles.buttonText}>Editar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.deleteButton}
+              onPress={() => handleDeleteProduct(item)} // Llamamos a la función de eliminar
+            >
+              <Text style={styles.buttonText}>Eliminar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 
-  // Mostramos un 'cargando' mientras el oyente se conecta
   if (loading || !businessData) {
     return (
       <SafeAreaView style={[styles.safeArea, styles.center]}>
@@ -63,11 +101,6 @@ export default function BusinessDetailScreen({ route, navigation }) {
       </SafeAreaView>
     );
   }
-
-  // --- INICIO DE LA MODIFICACIÓN (Lógica condicional) ---
-  // Ahora la lógica de 'isOwner' se calcula con el estado en tiempo real
-  const isOwner = user && businessData.ownerId === user.uid;
-  // --- FIN DE LA MODIFICACIÓN ---
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -81,11 +114,10 @@ export default function BusinessDetailScreen({ route, navigation }) {
 
         <View style={styles.productsContainer}>
           <Text style={styles.sectionTitle}>Productos y Servicios</Text>
-
+          
           {isOwner && (
             <TouchableOpacity 
               style={styles.addButton}
-              // Pasamos el ID real al formulario de añadir producto
               onPress={() => navigation.navigate('AddProduct', { businessId: businessData.id })}
             >
               <Text style={styles.addButtonText}>+ Añadir Producto/Servicio</Text>
@@ -93,9 +125,8 @@ export default function BusinessDetailScreen({ route, navigation }) {
           )}
 
           <FlatList
-            // Usamos el array 'products' del estado en tiempo real
             data={businessData.products} 
-            renderItem={renderProduct}
+            renderItem={renderProduct} // 'renderProduct' ahora tiene los botones
             keyExtractor={(item) => item.id}
             scrollEnabled={false}
             ListEmptyComponent={() => (
@@ -108,7 +139,7 @@ export default function BusinessDetailScreen({ route, navigation }) {
   );
 }
 
-// (Tus estilos se quedan casi igual, solo añadimos 'center')
+// --- 5. ACTUALIZAMOS LOS ESTILOS ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#FFF' },
   center: { justifyContent: 'center', alignItems: 'center' },
@@ -137,7 +168,34 @@ const styles = StyleSheet.create({
   },
   productInfo: { flex: 1, marginRight: 10 },
   productName: { fontSize: 16, fontWeight: 'bold', color: '#444' },
-  productDesc: { fontSize: 14, color: '#777', marginTop: 4 }, // Cambié 'productDesc' para que coincida
-  productPrice: { fontSize: 16, fontWeight: 'bold', color: '#e9967a' },
-  emptyText: { textAlign: 'center', color: '#888', fontStyle: 'italic', padding: 20 }
+  productDesc: { fontSize: 14, color: '#777', marginTop: 4 },
+  productPrice: { fontSize: 16, fontWeight: 'bold', color: '#e9967a', alignSelf: 'flex-end' },
+  emptyText: { textAlign: 'center', color: '#888', fontStyle: 'italic', padding: 20 },
+  
+  // -- Estilos NUEVOS para los botones --
+  productActions: {
+    alignItems: 'flex-end',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+  editButton: {
+    backgroundColor: '#007bff', // Azul
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginRight: 5,
+  },
+  deleteButton: {
+    backgroundColor: '#dc3545', // Rojo
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  }
 });
