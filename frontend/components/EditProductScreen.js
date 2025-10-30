@@ -8,10 +8,9 @@ import { db } from '../firebaseConfig';
 import { doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 
 export default function EditProductScreen({ route, navigation }) {
-  // 1. Obtenemos el PRODUCTO a editar y el ID del negocio
+  // (La lógica se queda 100% igual)
   const { product, businessId } = route.params;
 
-  // 2. Usamos los datos del producto para el estado inicial
   const [formData, setFormData] = useState({
     nombre: product.nombre,
     descripcion: product.descripcion,
@@ -25,39 +24,27 @@ export default function EditProductScreen({ route, navigation }) {
     setFormData((prevData) => ({ ...prevData, [field]: value }));
   };
 
-  // 3. Lógica para ACTUALIZAR el producto
   const handleUpdateProduct = async () => {
     if (!formData.nombre || !formData.precio) {
       Alert.alert('Campos requeridos', 'Por favor, completa nombre y precio.');
       return;
     }
     setLoading(true);
-
     try {
-      // 4. Creamos el NUEVO objeto del producto con los datos actualizados
       const updatedProduct = {
-        ...product, // Mantenemos el ID y createdAt originales
-        ...formData, // Sobrescribimos con los datos del formulario
+        ...product,
+        ...formData,
         precio: parseFloat(formData.precio) || 0,
-        updatedAt: new Date(), // Añadimos una fecha de actualización
+        updatedAt: new Date(),
       };
 
       const businessRef = doc(db, "businesses", businessId);
-
-      // 5. Ejecutamos dos operaciones:
-      // Primero, quitamos el producto original (el que recibimos en route.params)
-      await updateDoc(businessRef, {
-        products: arrayRemove(product) 
-      });
-      // Segundo, añadimos el producto actualizado
-      await updateDoc(businessRef, {
-        products: arrayUnion(updatedProduct)
-      });
+      await updateDoc(businessRef, { products: arrayRemove(product) });
+      await updateDoc(businessRef, { products: arrayUnion(updatedProduct) });
 
       setLoading(false);
       Alert.alert('¡Éxito!', 'Tu producto se ha actualizado.');
-      navigation.goBack(); // Vuelve a la pantalla de detalle
-
+      navigation.goBack();
     } catch (error) {
       setLoading(false);
       console.error("Error al actualizar producto: ", error);
@@ -65,10 +52,10 @@ export default function EditProductScreen({ route, navigation }) {
     }
   };
 
+  // (El JSX se queda 100% igual)
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* 4. Cambiamos el título */}
         <Text style={styles.title}>Editar Producto/Servicio</Text>
         
         <View style={styles.form}>
@@ -117,13 +104,12 @@ export default function EditProductScreen({ route, navigation }) {
 
           <TouchableOpacity
             style={styles.submitButton}
-            onPress={handleUpdateProduct} // 5. Llamamos a la función de actualizar
+            onPress={handleUpdateProduct}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              // 6. Cambiamos el texto del botón
               <Text style={styles.submitButtonText}>Guardar Cambios</Text>
             )}
           </TouchableOpacity>
@@ -133,17 +119,73 @@ export default function EditProductScreen({ route, navigation }) {
   );
 }
 
-// (Los estilos son idénticos a los de AddProductScreen)
+// --- INICIO DE LA MODIFICACIÓN DE ESTILOS ---
+// (Son idénticos a los de AddProductScreen)
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#faebd7' },
-  container: { flex: 1 },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#333', marginTop: 20, marginBottom: 20, textAlign: 'center' },
-  form: { paddingHorizontal: 25, paddingBottom: 40 },
-  label: { fontSize: 16, color: '#333', marginBottom: 8, fontWeight: '600' },
-  input: { backgroundColor: 'white', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 15, fontSize: 16, marginBottom: 20, borderWidth: 1, borderColor: '#DDD' },
-  inputMultiline: { height: 100, textAlignVertical: 'top' },
-  pickerContainer: { backgroundColor: 'white', borderRadius: 10, borderWidth: 1, borderColor: '#DDD', marginBottom: 20, justifyContent: 'center' },
-  picker: { width: '100%', height: 50 },
-  submitButton: { backgroundColor: '#e9967a', paddingVertical: 15, borderRadius: 30, alignItems: 'center', marginTop: 10, elevation: 3 },
-  submitButtonText: { color: 'white', fontSize: 18, fontWeight: 'bold' },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: '#FFFFFF' // <-- Fondo blanco
+  },
+  container: { 
+    flex: 1 
+  },
+  title: { 
+    fontSize: 26, 
+    fontWeight: 'bold', 
+    color: '#222222', // <-- Negro suave
+    marginTop: 20, 
+    marginBottom: 20, 
+    textAlign: 'center' 
+  },
+  form: { 
+    paddingHorizontal: 25, 
+    paddingBottom: 40 
+  },
+  label: { 
+    fontSize: 16, 
+    color: '#222222', // <-- Negro suave
+    marginBottom: 8, 
+    fontWeight: '600' 
+  },
+  input: { 
+    backgroundColor: 'white', 
+    borderRadius: 8, // <-- Bordes suaves
+    paddingVertical: 12, 
+    paddingHorizontal: 15, 
+    fontSize: 16, 
+    marginBottom: 20, 
+    borderWidth: 1, 
+    borderColor: '#E0E0E0', // <-- Borde gris claro
+    color: '#222222'
+  },
+  inputMultiline: { 
+    height: 100, 
+    textAlignVertical: 'top' 
+  },
+  pickerContainer: { 
+    backgroundColor: 'white', 
+    borderRadius: 8, // <-- Bordes suaves
+    borderWidth: 1, 
+    borderColor: '#E0E0E0', // <-- Borde gris claro
+    marginBottom: 20, 
+    justifyContent: 'center' 
+  },
+  picker: { 
+    width: '100%', 
+    height: 50,
+    color: '#222222'
+  },
+  submitButton: { 
+    backgroundColor: '#007AFF', // <-- Color primario (Azul)
+    paddingVertical: 15, 
+    borderRadius: 8, // <-- Bordes suaves
+    alignItems: 'center', 
+    marginTop: 10
+  },
+  submitButtonText: { 
+    color: 'white', 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
 });
+// --- FIN DE LA MODIFICACIÓN DE ESTILOS ---

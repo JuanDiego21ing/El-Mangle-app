@@ -9,45 +9,33 @@ import {
   Alert,
 } from "react-native";
 
-// --- INICIO DE LA MODIFICACIÓN 1: Imports de Firebase ---
+// Tus imports de Firebase (intactos)
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebaseConfig'; // (Asegúrate que la ruta sea correcta)
-// --- FIN DE LA MODIFICACIÓN 1 ---
+import { auth } from '../firebaseConfig'; 
 
 const logo = require("../assets/logo2.png");
 
+// Toda tu lógica (intacta)
 const Register = ({ navigation }) => {
-  // const [name, setName] = useState(""); // <-- Eliminamos 'name' state, no hay input para él
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // --- INICIO DE LA MODIFICACIÓN 2: Lógica de Registro Real ---
   const handleRegister = () => {
-    // Validación 1: Contraseñas coinciden (esto se queda igual)
     if (password !== confirmPassword) {
       Alert.alert("Error", "Las contraseñas no coinciden.");
       return;
     }
-
-    // Validación 2: Campos no vacíos
     if (!email || !password) {
         Alert.alert("Campos requeridos", "Por favor, ingresa correo y contraseña.");
         return;
     }
-
-    // console.log("Intento de registro con:", name, email, password); // <-- Eliminado
-    // Alert.alert("Registro exitoso", `Bienvenido, ${name}!`); // <-- Eliminado
-
-    // Función REAL de Firebase
+    
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
-        // Registro exitoso. AuthContext lo detectará automáticamente.
-        // Navegamos al Home
         navigation.navigate("Home");
       })
       .catch((error) => {
-        // Manejo de errores de Firebase
         let errorMessage = "Ocurrió un error al registrarte.";
         if (error.code === 'auth/email-already-in-use') {
           errorMessage = "Este correo electrónico ya está en uso.";
@@ -59,13 +47,14 @@ const Register = ({ navigation }) => {
         Alert.alert("Error de Registro", errorMessage);
       });
   };
-  // --- FIN DE LA MODIFICACIÓN 2 ---
 
+  // Tu JSX (intacto)
   return (
     <View style={styles.container}>
       <Image source={logo} style={styles.logo} resizeMode="contain" />
 
-      {/* El formulario está perfecto, no se toca */}
+      <Text style={styles.title}>Crear Cuenta</Text>
+
       <TextInput
         style={styles.input}
         placeholder="Correo electrónico"
@@ -73,13 +62,15 @@ const Register = ({ navigation }) => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
-        placeholder="Contraseña"
+        placeholder="Contraseña (mín. 6 caracteres)"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
@@ -87,10 +78,11 @@ const Register = ({ navigation }) => {
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
+        placeholderTextColor="#888"
       />
       <TouchableOpacity
         style={styles.entrarBoton}
-        onPress={handleRegister} // Llama a la nueva función real
+        onPress={handleRegister}
         activeOpacity={0.7}
       >
         <Text style={styles.entrarTexto}>Registrarse</Text>
@@ -99,67 +91,75 @@ const Register = ({ navigation }) => {
       <View style={styles.registerLinkContainer}>
         <Text style={styles.noCuenta}>¿Ya tienes una cuenta? </Text>
         <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-          <Text
-            style={{ ...styles.noCuenta, fontWeight: "bold", color: "#007bff" }}
-          >
-            Inicia sesión
-          </Text>
+          <Text style={styles.registerText}>Inicia sesión</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-// (Tus estilos se quedan 100% idénticos)
+// --- INICIO DE LA MODIFICACIÓN DE ESTILOS ---
+// (Los estilos son casi idénticos a los de Login)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     padding: 30,
-    paddingBottom: 100,
-    backgroundColor: "#faebd7",
+    backgroundColor: "#FFFFFF", // <-- Fondo blanco
   },
-
   logo: {
     width: "80%",
     height: 150,
     alignSelf: "center",
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#222222", // <-- Título con negro suave
+    textAlign: "center",
     marginBottom: 30,
   },
-
   input: {
     height: 50,
-    borderColor: "#000000ff",
     backgroundColor: "white",
-    borderWidth: 2,
+    borderWidth: 1,
+    borderColor: "#E0E0E0", // <-- Borde gris claro
     marginBottom: 15,
-    paddingHorizontal: 10,
-    borderRadius: 15,
+    paddingHorizontal: 15,
+    borderRadius: 8, // <-- Bordes más suaves
+    fontSize: 16,
+    color: "#222222",
   },
-
   entrarBoton: {
-    backgroundColor: "#2ca909ff",
+    backgroundColor: "#007AFF", // <-- Color primario (Azul)
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 8, // <-- Bordes más suaves
     alignItems: "center",
     marginTop: 10,
   },
-
   entrarTexto: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-
   registerLinkContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 25,
     alignItems: "center",
   },
   noCuenta: {
     fontSize: 16,
+    color: "#555555", // <-- Gris oscuro
+  },
+  registerText: {
+    color: "#007AFF", // <-- Color primario (Azul)
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 5,
   },
 });
+// --- FIN DE LA MODIFICACIÓN DE ESTILOS ---
 
 export default Register;

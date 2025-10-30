@@ -45,18 +45,6 @@ export default function App() {
                   style={{ width: 120, height: 40, resizeMode: "contain" }}
                 />
               ),
-              // --- NOTA ---
-              // Este botón de "Login" en la cabecera ya no es necesario
-              // porque tu HomeScreen ahora muestra "Iniciar Sesión"
-              // o "Registrar Negocio" en el contenido.
-              // Puedes borrar todo el 'headerRight' si quieres.
-              headerRight: () => (
-                <Button
-                  onPress={() => navigation.navigate("Login")}
-                  title="Login"
-                  color="#007bff"
-                />
-              ),
             })}
           />
           <Stack.Screen

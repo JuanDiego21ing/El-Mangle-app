@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { 
   StyleSheet, Text, View, SafeAreaView, ScrollView, 
   Image, TouchableOpacity, FlatList, ActivityIndicator,
-  Alert 
+  Alert, Linking // <-- 1. Importamos 'Linking' para el teléfono/email
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './AuthContext';
 import { db } from '../firebaseConfig';
-// --- 1. Importamos 'deleteDoc' ---
 import { doc, onSnapshot, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore'; 
 
 export default function BusinessDetailScreen({ route, navigation }) {
@@ -15,6 +15,7 @@ export default function BusinessDetailScreen({ route, navigation }) {
   const [loading, setLoading] = useState(true);
   const [businessData, setBusinessData] = useState(route.params.businessData || null);
 
+  // (El useEffect de Firestore se queda igual)
   useEffect(() => {
     setLoading(true);
     const docRef = doc(db, "businesses", businessId);
@@ -22,7 +23,6 @@ export default function BusinessDetailScreen({ route, navigation }) {
       if (doc.exists()) {
         setBusinessData({ ...doc.data(), id: doc.id });
       } else {
-        // Si el doc no existe (porque fue borrado), volvemos al Home
         navigation.navigate("Home");
       }
       setLoading(false);
@@ -30,6 +30,7 @@ export default function BusinessDetailScreen({ route, navigation }) {
     return () => unsubscribe();
   }, [businessId]);
   
+  // (Las funciones de 'handleDeleteProduct' y 'handleDeleteBusiness' se quedan igual)
   const handleDeleteProduct = (productToDelete) => {
     Alert.alert(
       "Eliminar Producto",
@@ -55,7 +56,6 @@ export default function BusinessDetailScreen({ route, navigation }) {
     );
   };
   
-  // --- 2. NUEVA FUNCIÓN: Eliminar el Negocio (deleteDoc) ---
   const handleDeleteBusiness = () => {
     Alert.alert(
       "Eliminar Negocio",
@@ -67,12 +67,8 @@ export default function BusinessDetailScreen({ route, navigation }) {
           style: "destructive",
           onPress: async () => {
             try {
-              // Apunta al documento del negocio
               const businessRef = doc(db, "businesses", businessId);
-              // Elimina el documento
               await deleteDoc(businessRef);
-              
-              // onSnapshot detectará el borrado y nos enviará al Home
               Alert.alert("Éxito", "Negocio eliminado.");
             } catch (error) {
               console.error("Error al eliminar negocio: ", error);
@@ -86,31 +82,38 @@ export default function BusinessDetailScreen({ route, navigation }) {
 
   const isOwner = user && businessData && businessData.ownerId === user.uid;
 
-  // (renderProduct se queda igual)
+  // (El 'renderProduct' se queda igual)
   const renderProduct = ({ item }) => (
     <View style={styles.productCard}>
+      {item.imagen ? (
+        <Image source={{ uri: item.imagen }} style={styles.productImage} />
+      ) : (
+        <View style={styles.productImagePlaceholder}>
+          <Ionicons name="image-outline" size={30} color="#CCC" />
+        </View>
+      )}
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.nombre}</Text>
-        <Text style={styles.productDesc}>{item.descripcion}</Text>
+        <Text style={styles.productDesc} numberOfLines={2}>{item.descripcion}</Text>
       </View>
       <View style={styles.productActions}>
         <Text style={styles.productPrice}>${item.precio.toFixed(2)}</Text>
         {isOwner && (
-          <View style={styles.buttonGroup}>
+          <View style={styles.productButtonGroup}>
             <TouchableOpacity 
-              style={styles.editButton}
+              style={styles.productEditButton}
               onPress={() => navigation.navigate('EditProduct', { 
                 product: item,
                 businessId: businessId 
               })}
             >
-              <Text style={styles.buttonText}>Editar</Text>
+              <Ionicons name="pencil-outline" size={18} color="white" />
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.deleteButton}
+              style={styles.productDeleteButton}
               onPress={() => handleDeleteProduct(item)}
             >
-              <Text style={styles.buttonText}>Eliminar</Text>
+              <Ionicons name="trash-outline" size={18} color="white" />
             </TouchableOpacity>
           </View>
         )}
@@ -118,58 +121,94 @@ export default function BusinessDetailScreen({ route, navigation }) {
     </View>
   );
 
+  // (El 'loading' se queda igual)
   if (loading || !businessData) {
     return (
       <SafeAreaView style={[styles.safeArea, styles.center]}>
-        <ActivityIndicator size="large" color="#e9967a" />
+        <ActivityIndicator size="large" color="#007AFF" />
       </SafeAreaView>
     );
   }
 
+  // --- 2. JSX MODIFICADO: Añadimos los nuevos campos de info ---
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView>
-        <Image source={{ uri: businessData.mainImageUrl }} style={styles.mainImage} />
+        <Image 
+          source={{ uri: businessData.mainImageUrl }} 
+          style={styles.mainImage} 
+        />
         <View style={styles.infoContainer}>
           <Text style={styles.title}>{businessData.nombre}</Text>
           <Text style={styles.category}>{businessData.category}</Text>
-          <Text style={styles.address}>{businessData.address}</Text>
+          
+          {/* -- DESCRIPCIÓN -- */}
+          <Text style={styles.description}>{businessData.descripcion}</Text>
+
+          {/* -- INFO DE CONTACTO CON ICONOS -- */}
+          <View style={styles.infoGroup}>
+            {businessData.address && (
+              <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={20} color="#555555" style={styles.infoIcon} />
+                <Text style={styles.infoText}>{businessData.address}</Text>
+              </View>
+            )}
+            {businessData.telefono && (
+              <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(`tel:${businessData.telefono}`)}>
+                <Ionicons name="call-outline" size={20} color="#555555" style={styles.infoIcon} />
+                <Text style={styles.infoTextClickable}>{businessData.telefono}</Text>
+              </TouchableOpacity>
+            )}
+            {businessData.email && (
+              <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(`mailto:${businessData.email}`)}>
+                <Ionicons name="mail-outline" size={20} color="#555555" style={styles.infoIcon} />
+                <Text style={styles.infoTextClickable}>{businessData.email}</Text>
+              </TouchableOpacity>
+            )}
+            {businessData.horario && (
+              <View style={styles.infoRow}>
+                <Ionicons name="time-outline" size={20} color="#555555" style={styles.infoIcon} />
+                <Text style={styles.infoText}>{businessData.horario}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
-        {/* --- 3. NUEVO BLOQUE: Panel de Administración del Negocio --- */}
+        {/* (El panel de admin se queda igual) */}
         {isOwner && (
           <View style={styles.adminPanel}>
             <Text style={styles.adminTitle}>Panel de Dueño</Text>
             <TouchableOpacity 
               style={styles.adminButton}
               onPress={() => navigation.navigate('EditBusiness', { 
-                businessData: businessData // Pasamos todos los datos al editor
+                businessData: businessData
               })}
             >
+              <Ionicons name="pencil-outline" size={20} color="white" style={styles.adminButtonIcon} />
               <Text style={styles.adminButtonText}>Editar Información del Negocio</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.adminButton, styles.adminButtonDelete]}
               onPress={handleDeleteBusiness}
             >
+              <Ionicons name="trash-outline" size={20} color="white" style={styles.adminButtonIcon} />
               <Text style={styles.adminButtonText}>Eliminar Negocio</Text>
             </TouchableOpacity>
           </View>
         )}
-        {/* --- FIN DEL BLOQUE NUEVO --- */}
 
+        {/* (La sección de productos se queda igual) */}
         <View style={styles.productsContainer}>
           <Text style={styles.sectionTitle}>Productos y Servicios</Text>
-          
           {isOwner && (
             <TouchableOpacity 
               style={styles.addButton}
               onPress={() => navigation.navigate('AddProduct', { businessId: businessData.id })}
             >
-              <Text style={styles.addButtonText}>+ Añadir Producto/Servicio</Text>
+              <Ionicons name="add-circle-outline" size={20} color="white" style={styles.adminButtonIcon} />
+              <Text style={styles.addButtonText}>Añadir Producto/Servicio</Text>
             </TouchableOpacity>
           )}
-
           <FlatList
             data={businessData.products} 
             renderItem={renderProduct}
@@ -185,93 +224,192 @@ export default function BusinessDetailScreen({ route, navigation }) {
   );
 }
 
-// --- 4. AÑADIMOS NUEVOS ESTILOS para el panel de admin ---
+// --- 3. AÑADIMOS NUEVOS ESTILOS para la info de contacto ---
 const styles = StyleSheet.create({
-  // (Tus estilos existentes: safeArea, center, mainImage, infoContainer... se quedan igual)
-  safeArea: { flex: 1, backgroundColor: '#FFF' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   center: { justifyContent: 'center', alignItems: 'center' },
-  mainImage: { width: '100%', height: 250 },
-  infoContainer: { padding: 20, borderBottomWidth: 1, borderColor: '#EEE' },
-  title: { fontSize: 26, fontWeight: 'bold', color: '#333' },
-  category: { fontSize: 16, color: '#e9967a', fontWeight: '500', marginTop: 4 },
-  address: { fontSize: 16, color: '#666', marginTop: 10 },
+  mainImage: { width: '100%', height: 250, resizeMode: 'cover' },
+  infoContainer: { 
+    padding: 20, 
+    borderBottomWidth: 1, 
+    borderColor: '#E0E0E0',
+    backgroundColor: '#FFFFFF',
+  },
+  title: { fontSize: 26, fontWeight: 'bold', color: '#222222' },
+  category: { fontSize: 16, color: '#007AFF', fontWeight: '500', marginTop: 4, marginBottom: 15 },
   
-  // -- Panel de Admin (NUEVO) --
+  // -- Estilos NUEVOS para info --
+  description: {
+    fontSize: 15,
+    color: '#555555',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  infoGroup: {
+    marginTop: 10,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  infoIcon: {
+    marginRight: 15,
+  },
+  infoText: {
+    fontSize: 15,
+    color: '#222222',
+    flex: 1, // Para que el texto se ajuste
+  },
+  infoTextClickable: { // Para email y teléfono
+    fontSize: 15,
+    color: '#007AFF', // Azul
+    flex: 1,
+    textDecorationLine: 'underline',
+  },
+  
+  // (El resto de estilos se queda igual)
   adminPanel: {
     padding: 20,
-    backgroundColor: '#fff8f0',
+    backgroundColor: '#F7F7F7',
     borderBottomWidth: 1,
-    borderColor: '#EEE',
+    borderColor: '#E0E0E0',
   },
   adminTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#222222',
     marginBottom: 15,
   },
   adminButton: {
-    backgroundColor: '#007bff', // Azul
+    flexDirection: 'row',
+    backgroundColor: '#007AFF',
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
   },
   adminButtonDelete: {
-    backgroundColor: '#dc3545', // Rojo
+    backgroundColor: '#E53E3E',
   },
   adminButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+    marginLeft: 8,
   },
-  
-  // (Estilos de Productos, botones, etc. se quedan igual)
-  productsContainer: { padding: 20 },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 15 },
+  adminButtonIcon: {
+    marginRight: 8,
+  },
+  productsContainer: { 
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  sectionTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#222222',
+    marginBottom: 15 
+  },
   addButton: {
-    backgroundColor: '#e9967a',
+    flexDirection: 'row',
+    backgroundColor: '#007AFF',
     padding: 12,
-    borderRadius: 30,
+    borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
   },
-  addButtonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  addButtonText: { 
+    color: 'white', 
+    fontSize: 16, 
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
   productCard: {
     flexDirection: 'row',
-    backgroundColor: '#FAFAFA',
-    borderRadius: 10,
-    padding: 15,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 10,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
-  productInfo: { flex: 1, marginRight: 10 },
-  productName: { fontSize: 16, fontWeight: 'bold', color: '#444' },
-  productDesc: { fontSize: 14, color: '#777', marginTop: 4 },
-  productPrice: { fontSize: 16, fontWeight: 'bold', color: '#e9967a', alignSelf: 'flex-end' },
-  emptyText: { textAlign: 'center', color: '#888', fontStyle: 'italic', padding: 20 },
+  productImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    marginRight: 12,
+    resizeMode: 'cover',
+  },
+  productImagePlaceholder: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+    marginRight: 12,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  productInfo: { 
+    flex: 1, 
+    marginRight: 10 
+  },
+  productName: { 
+    fontSize: 17, 
+    fontWeight: 'bold', 
+    color: '#222222' 
+  },
+  productDesc: { 
+    fontSize: 13, 
+    color: '#555555', 
+    marginTop: 4 
+  },
+  productPrice: { 
+    fontSize: 16, 
+    fontWeight: 'bold', 
+    color: '#007AFF',
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+  },
   productActions: {
     alignItems: 'flex-end',
+    justifyContent: 'space-between',
   },
-  buttonGroup: {
+  productButtonGroup: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: 0,
   },
-  editButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 5,
+  productEditButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 5,
+    borderRadius: 6,
     marginRight: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  deleteButton: {
-    backgroundColor: '#dc3545',
-    paddingVertical: 5,
+  productDeleteButton: {
+    backgroundColor: '#E53E3E',
+    paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 5,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  buttonText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
+  emptyText: { 
+    textAlign: 'center', 
+    color: '#888', 
+    fontStyle: 'italic', 
+    padding: 20 
   }
 });

@@ -6,41 +6,31 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Alert, // <--- 1. Importa Alert para mostrar errores
+  Alert,
 } from "react-native";
 
-// --- INICIO DE LA MODIFICACIÓN 1 ---
-// Ya no importamos 'useAuth', importamos las funciones reales de Firebase
+// Tus imports de Firebase (intactos)
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../firebaseConfig'; // (Asegúrate que la ruta sea correcta)
-// --- FIN DE LA MODIFICACIÓN 1 ---
+import { auth } from '../firebaseConfig'; 
 
 const logo = require("../assets/logo2.png");
 
+// Toda tu lógica (intacta)
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // --- INICIO DE LA MODIFICACIÓN 2 ---
-  // const { mockLogin } = useAuth(); // <-- Borramos la función simulada
-
   const handleLogin = () => {
-    // 1. La validación se queda igual
     if (!email || !password) {
       Alert.alert("Campos requeridos", "Por favor, ingresa correo y contraseña.");
       return;
     }
 
-    // 2. Llamamos a la función REAL de Firebase
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
-        // Inicio de sesión exitoso.
-        // AuthContext se actualizará solo.
-        // 3. Navegamos al Home DESPUÉS de que el login sea exitoso.
         navigation.navigate("Home");
       })
       .catch((error) => {
-        // 4. Manejamos los errores de Firebase
         let errorMessage = "Correo o contraseña incorrectos.";
         if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
             errorMessage = "El correo o la contraseña son incorrectos.";
@@ -48,11 +38,13 @@ const Login = ({ navigation }) => {
         Alert.alert("Error de inicio de sesión", errorMessage);
       });
   };
-  // --- FIN DE LA MODIFICACIÓN 2 ---
 
+  // Tu JSX (intacto)
   return (
     <View style={styles.container}>
       <Image source={logo} style={styles.logo} resizeMode="contain" />
+
+      <Text style={styles.title}>Iniciar Sesión</Text>
 
       <TextInput
         style={styles.input}
@@ -61,6 +53,7 @@ const Login = ({ navigation }) => {
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
+        placeholderTextColor="#888"
       />
       <TextInput
         style={styles.input}
@@ -68,82 +61,87 @@ const Login = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        placeholderTextColor="#888"
       />
       <TouchableOpacity
         style={styles.entrarBoton}
-        onPress={handleLogin} // 'handleLogin' ahora llama a la función real
+        onPress={handleLogin}
         activeOpacity={0.7}
       >
         <Text style={styles.entrarTexto}>Entrar</Text>
       </TouchableOpacity>
 
-      {/* Tu link de registro se queda igual */}
       <View style={styles.registerLinkContainer}>
-        <Text style={styles.noCuenta}>No tienes una cuenta?</Text>
+        <Text style={styles.noCuenta}>¿No tienes una cuenta?</Text>
         <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-          <Text style={styles.registerText}>Registrarse</Text>
+          <Text style={styles.registerText}>Regístrate</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
 
-// (Tus estilos se quedan 100% idénticos)
+// --- INICIO DE LA MODIFICACIÓN DE ESTILOS ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     padding: 30,
-    paddingBottom: 100,
-    backgroundColor: "#faebd7",
+    backgroundColor: "#FFFFFF", // <-- Fondo blanco
   },
-
   logo: {
     width: "80%",
     height: 150,
     alignSelf: "center",
+    marginBottom: 20, // Reducimos un poco el margen
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#222222", // <-- Título con negro suave
+    textAlign: "center",
     marginBottom: 30,
   },
-
   input: {
     height: 50,
-    borderColor: "#000000ff",
     backgroundColor: "white",
-    borderWidth: 2,
+    borderWidth: 1,
+    borderColor: "#E0E0E0", // <-- Borde gris claro
     marginBottom: 15,
-    paddingHorizontal: 10,
-    borderRadius: 15,
+    paddingHorizontal: 15,
+    borderRadius: 8, // <-- Bordes más suaves
+    fontSize: 16,
+    color: "#222222", // <-- Color del texto
   },
-
   entrarBoton: {
-    backgroundColor: "#2ca909ff",
+    backgroundColor: "#007AFF", // <-- Color primario (Azul)
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 8, // <-- Bordes más suaves
     alignItems: "center",
     marginTop: 10,
   },
-
   entrarTexto: {
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
-
   registerLinkContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 25,
     alignItems: "center",
   },
   noCuenta: {
     fontSize: 16,
+    color: "#555555", // <-- Gris oscuro
   },
   registerText: {
-    color: "#007bff",
+    color: "#007AFF", // <-- Color primario (Azul)
     fontSize: 16,
     fontWeight: "bold",
-    textDecorationLine: "underline",
+    marginLeft: 5,
   },
 });
+// --- FIN DE LA MODIFICACIÓN DE ESTILOS ---
 
 export default Login;

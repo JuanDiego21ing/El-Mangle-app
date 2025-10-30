@@ -16,7 +16,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { useAuth } from "./AuthContext";
 
-// (CATEGORIES_LIST y INITIAL_FORM_STATE se quedan igual)
+// (La lógica y los arrays se quedan 100% igual)
 const CATEGORIES_LIST = [
   "Restaurante", "Cafetería", "Servicios", "Compras", "Salud", "Belleza", "Otro",
 ];
@@ -45,26 +45,19 @@ export default function CreateBusinessScreen() {
       Alert.alert("Campos requeridos", "Por favor, completa nombre, categoría, teléfono y ubicación.");
       return;
     }
-
     setLoading(true);
-
     try {
       const businessData = {
         ...formData,
         ownerId: user.uid,
         createdAt: serverTimestamp(),
-        // --- INICIO DE LA MODIFICACIÓN ---
-        products: [], // <-- ¡AÑADIMOS ESTO! Creamos el array de productos vacío
-        // --- FIN DE LA MODIFICACIÓN ---
+        products: [],
       };
-
       await addDoc(collection(db, "businesses"), businessData);
-
       setLoading(false);
       Alert.alert("¡Éxito!", "Tu negocio se ha registrado correctamente.");
       setFormData(INITIAL_FORM_STATE);
       navigation.goBack();
-
     } catch (error) {
       setLoading(false);
       console.error("Error al crear negocio: ", error);
@@ -72,8 +65,8 @@ export default function CreateBusinessScreen() {
     }
   };
 
+  // (El JSX/return se queda 100% igual, solo añadimos 'placeholderTextColor')
   return (
-    // ... (El resto de tu JSX se queda 100% igual) ...
     <SafeAreaView style={styles.safeArea}>
       <ScrollView 
         style={styles.container}
@@ -88,6 +81,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ej: Taquería El Super Burro"
+            placeholderTextColor="#888"
             value={formData.nombre}
             onChangeText={(text) => handleChange("nombre", text)}
           />
@@ -110,6 +104,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={[styles.input, styles.inputMultiline]}
             placeholder="Una breve descripción de tu negocio..."
+            placeholderTextColor="#888"
             value={formData.descripcion}
             onChangeText={(text) => handleChange("descripcion", text)}
             multiline
@@ -120,6 +115,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ej: 612 123 4567"
+            placeholderTextColor="#888"
             value={formData.telefono}
             onChangeText={(text) => handleChange("telefono", text)}
             keyboardType="phone-pad"
@@ -129,6 +125,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ej: contacto@minegocio.com"
+            placeholderTextColor="#888"
             value={formData.email}
             onChangeText={(text) => handleChange("email", text)}
             keyboardType="email-address"
@@ -139,6 +136,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ej: Lunes a Viernes de 9am - 6pm"
+            placeholderTextColor="#888"
             value={formData.horario}
             onChangeText={(text) => handleChange("horario", text)}
           />
@@ -147,6 +145,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="Ej: Av. Insurgentes Sur 123"
+            placeholderTextColor="#888"
             value={formData.address}
             onChangeText={(text) => handleChange("address", text)}
           />
@@ -155,6 +154,7 @@ export default function CreateBusinessScreen() {
           <TextInput
             style={styles.input}
             placeholder="https://ejemplo.com/mi-logo.png"
+            placeholderTextColor="#888"
             value={formData.mainImageUrl}
             onChangeText={(text) => handleChange("mainImageUrl", text)}
             keyboardType="url"
@@ -191,11 +191,11 @@ export default function CreateBusinessScreen() {
   );
 }
 
-// (Tus estilos se quedan 100% igual)
+// --- INICIO DE LA MODIFICACIÓN DE ESTILOS ---
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#faebd7",
+    backgroundColor: "#FFFFFF", // <-- Fondo blanco
   },
   container: {
     flex: 1,
@@ -203,14 +203,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#333",
+    color: "#222222", // <-- Negro suave
     marginTop: 20,
     marginBottom: 10,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 16,
-    color: "#555",
+    color: "#555555", // <-- Gris oscuro
     textAlign: "center",
     marginBottom: 20,
     paddingHorizontal: 20,
@@ -221,19 +221,20 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    color: "#333",
+    color: "#222222", // <-- Negro suave
     marginBottom: 8,
     fontWeight: "600",
   },
   input: {
     backgroundColor: "white",
-    borderRadius: 10,
+    borderRadius: 8, // <-- Bordes suaves
     paddingVertical: 12,
     paddingHorizontal: 15,
     fontSize: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: "#DDD",
+    borderColor: "#E0E0E0", // <-- Borde gris claro
+    color: "#222222",
   },
   inputMultiline: {
     height: 100,
@@ -241,27 +242,23 @@ const styles = StyleSheet.create({
   },
   pickerContainer: {
     backgroundColor: "white",
-    borderRadius: 10,
+    borderRadius: 8, // <-- Bordes suaves
     borderWidth: 1,
-    borderColor: "#DDD",
+    borderColor: "#E0E0E0", // <-- Borde gris claro
     marginBottom: 20,
     justifyContent: 'center',
   },
   picker: {
     width: "100%",
     height: 50,
+    color: "#222222",
   },
   submitButton: {
-    backgroundColor: "#e9967a",
+    backgroundColor: "#007AFF", // <-- Color primario (Azul)
     paddingVertical: 15,
-    borderRadius: 30,
+    borderRadius: 8, // <-- Bordes suaves
     alignItems: "center",
     marginTop: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   submitButtonText: {
     color: "white",
@@ -269,3 +266,4 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+// --- FIN DE LA MODIFICACIÓN DE ESTILOS ---
