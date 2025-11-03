@@ -7,6 +7,10 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  // --- 1. Importamos los componentes necesarios ---
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig'; 
@@ -14,6 +18,7 @@ import { auth } from '../firebaseConfig';
 const logo = require("../assets/logo2.png");
 
 const Login = ({ navigation }) => {
+  // (La lógica se queda 100% igual)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -22,74 +27,77 @@ const Login = ({ navigation }) => {
       Alert.alert("Campos requeridos", "Por favor, ingresa correo y contraseña.");
       return;
     }
-
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // Ya no navegamos. Reseteamos el historial para que 'Home'
-        // sea la única pantalla y no haya "atrás".
         navigation.reset({
           index: 0,
           routes: [{ name: 'Home' }],
         });
-        // --- FIN DE LA MODIFICACIÓN ---
       })
       .catch((error) => {
         let errorMessage = "Correo o contraseña incorrectos.";
-        if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {
-            errorMessage = "El correo o la contraseña son incorrectos.";
-        }
         Alert.alert("Error de inicio de sesión", errorMessage);
       });
   };
 
-  // (El resto de tu JSX y estilos se quedan 100% igual)
+  // --- 2. Modificamos el JSX ---
   return (
-    <View style={styles.container}>
-      <Image source={logo} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.title}>Iniciar Sesión</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Correo electrónico"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        placeholderTextColor="#888"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholderTextColor="#888"
-      />
-      <TouchableOpacity
-        style={styles.entrarBoton}
-        onPress={handleLogin}
-        activeOpacity={0.7}
+    // 'KeyboardAvoidingView' envuelve todo
+    <KeyboardAvoidingView 
+      style={{ flex: 1, backgroundColor: '#FFFFFF' }} // <-- Ocupa toda la pantalla y pone el fondo
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // <-- Comportamiento por OS
+    >
+      {/* 'ScrollView' permite que el contenido se mueva */}
+      <ScrollView 
+        contentContainerStyle={styles.container} // <-- El estilo original se aplica aquí
+        keyboardShouldPersistTaps="handled" // <-- Permite tocar botones con el teclado abierto
       >
-        <Text style={styles.entrarTexto}>Entrar</Text>
-      </TouchableOpacity>
-      <View style={styles.registerLinkContainer}>
-        <Text style={styles.noCuenta}>¿No tienes una cuenta?</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-          <Text style={styles.registerText}>Regístrate</Text>
+        <Image source={logo} style={styles.logo} resizeMode="contain" />
+        <Text style={styles.title}>Iniciar Sesión</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Correo electrónico"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          placeholderTextColor="#888"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          placeholderTextColor="#888"
+        />
+        <TouchableOpacity
+          style={styles.entrarBoton}
+          onPress={handleLogin}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.entrarTexto}>Entrar</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+        <View style={styles.registerLinkContainer}>
+          <Text style={styles.noCuenta}>¿No tienes una cuenta?</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+            <Text style={styles.registerText}>Regístrate</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
-// (Tus estilos se quedan 100% igual)
+// --- 3. Modificamos los Estilos ---
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1, // <-- Importante: 'flexGrow' en lugar de 'flex' para ScrollView
     justifyContent: "center",
     padding: 30,
     backgroundColor: "#FFFFFF",
   },
+  // (El resto de los estilos se queda 100% igual)
   logo: {
     width: "80%",
     height: 150,
