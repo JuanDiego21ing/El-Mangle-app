@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react"; // <-- 1. Importa useMemo y useCallback
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,7 +12,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons"; // (Ya lo teníamos, ahora lo usamos más)
 import { useAuth } from "./AuthContext";
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../firebaseConfig';
@@ -33,14 +33,13 @@ const MOCK_CATEGORIES = [
 const NUM_COLUMNS = 4;
 
 export default function HomeScreen({ navigation }) {
+  // (Toda tu lógica de 'useState', 'useEffect' y 'useMemo' se queda 100% igual)
   const { user } = useAuth();
-  
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [allBusinesses, setAllBusinesses] = useState([]);
   
-  // (El useEffect de Firestore se queda igual)
   useEffect(() => {
     setLoading(true);
     const q = query(collection(db, "businesses"));
@@ -59,27 +58,18 @@ export default function HomeScreen({ navigation }) {
     return () => unsubscribe();
   }, []);
 
-  
-  // --- 2. USAMOS 'useMemo' PARA CALCULAR LOS DATOS FILTRADOS Y SECCIONADOS ---
-  // Esto es más eficiente. Solo se re-calcula si una de las dependencias cambia.
   const sectionedData = useMemo(() => {
     let businessesToFilter = [...allBusinesses];
-
-    // 1. Aplicamos filtro de BÚSQUEDA
     if (search) {
       businessesToFilter = businessesToFilter.filter((item) =>
         item.nombre.toLowerCase().includes(search.toLowerCase())
       );
     }
-    
-    // 2. Aplicamos filtro de CATEGORÍA
     if (selectedCategory !== "Todos") {
       businessesToFilter = businessesToFilter.filter(
         (b) => b.category === selectedCategory
       );
     }
-    
-    // 3. Separamos en secciones
     if (!user) {
       return [{ title: "Negocios Populares", data: businessesToFilter }];
     } else {
@@ -97,26 +87,20 @@ export default function HomeScreen({ navigation }) {
       if (otherBusinesses.length > 0) sections.push({ title: 'Otros Negocios', data: otherBusinesses });
       return sections;
     }
-  }, [allBusinesses, user, search, selectedCategory]); // <-- Dependencias
-  // --- FIN DE 'useMemo' ---
+  }, [allBusinesses, user, search, selectedCategory]);
 
-  
-  // (Las funciones de 'handle' se quedan igual)
   const handleSearch = (text) => {
     setSearch(text);
     setSelectedCategory("Todos");
   };
-
   const handleCategoryPress = (categoryName) => {
     setSelectedCategory(categoryName);
     setSearch("");
   };
-
   const handleLogout = () => {
     signOut(auth).catch((error) => Alert.alert("Error", error.message));
   };
 
-  // (El useEffect de la cabecera se queda igual)
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -135,7 +119,8 @@ export default function HomeScreen({ navigation }) {
     });
   }, [navigation, user]);
 
-  // (renderBusinessCard se queda igual)
+
+  // --- 1. 'renderBusinessCard' MODIFICADO ---
   const renderBusinessCard = ({ item }) => (
     <TouchableOpacity
       style={styles.cardContainer}
@@ -147,18 +132,40 @@ export default function HomeScreen({ navigation }) {
         })
       }
     >
-      <Image source={{ uri: item.mainImageUrl }} style={styles.cardImage} />
+      {/* Columna 1: Logo */}
+      {item.mainImageUrl ? (
+        <Image source={{ uri: item.mainImageUrl }} style={styles.cardLogo} />
+      ) : (
+        <View style={styles.cardLogoPlaceholder}>
+          <Ionicons name="image-outline" size={30} color="#CCC" />
+        </View>
+      )}
+      
+      {/* Columna 2: Info del Negocio */}
       <View style={styles.cardTextContainer}>
-        <Text style={styles.cardTitle}>{item.nombre}</Text>
-        <Text style={styles.cardCategory}>{item.category}</Text>
+        <Text style={styles.cardTitle} numberOfLines={1}>{item.nombre}</Text>
+        <Text style={styles.cardCategory} numberOfLines={1}>{item.category}</Text>
+        
+        {/* Info adicional con iconos */}
+        {item.address && (
+          <View style={styles.detailRow}>
+            <Ionicons name="location-outline" size={14} color="#555" style={styles.detailIcon} />
+            <Text style={styles.detailText} numberOfLines={1}>{item.address}</Text>
+          </View>
+        )}
+        {item.horario && (
+          <View style={styles.detailRow}>
+            <Ionicons name="time-outline" size={14} color="#555" style={styles.detailIcon} />
+            <Text style={styles.detailText} numberOfLines={1}>{item.horario}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
+  // --- FIN DE LA MODIFICACIÓN ---
 
-  // --- 3. 'renderHeader' MODIFICADO ---
-  // Se ha quitado la barra de búsqueda de aquí.
-  // Usamos 'useCallback' para que esta función sea estable y no se
-  // recree innecesariamente, mejorando el rendimiento de SectionList.
+
+  // ('renderHeader' se queda igual)
   const renderHeader = useCallback(() => (
     <>
       <View style={styles.authButtonContainer}>
@@ -172,7 +179,6 @@ export default function HomeScreen({ navigation }) {
         )}
       </View>
       
-      {/* Las categorías se quedan aquí */}
       <View style={styles.categoriesCard}>
         <FlatList
           data={MOCK_CATEGORIES}
@@ -204,10 +210,9 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
     </>
-  ), [user, selectedCategory]); // <-- Dependencias de renderHeader
-  // --- FIN DE 'renderHeader' ---
+  ), [user, selectedCategory]);
 
-  // (El spinner de carga se queda igual)
+  // (Spinner de Carga se queda igual)
   if (loading && allBusinesses.length === 0) {
     return (
       <View style={styles.centerContainer}>
@@ -216,11 +221,11 @@ export default function HomeScreen({ navigation }) {
     );
   }
 
-  // --- 4. 'return' MODIFICADO ---
+  // (El 'return' principal se queda igual)
   return (
     <SafeAreaView style={styles.container}>
       
-      {/* La barra de búsqueda AHORA VIVE AQUÍ (fuera de la lista) */}
+      {/* La barra de búsqueda (intacta) */}
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
           <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
@@ -234,13 +239,13 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
-      {/* La SectionList ahora toma el espacio restante */}
+      {/* La SectionList (intacta) */}
       <SectionList
-        style={{flex: 1}} // <-- Ocupa el espacio
-        sections={sectionedData} // <-- Usa los datos de useMemo
+        style={{flex: 1}}
+        sections={sectionedData}
         keyExtractor={(item) => item.id}
         renderItem={renderBusinessCard}
-        ListHeaderComponent={renderHeader} // <-- Cabecera (sin búsqueda)
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         renderSectionHeader={({ section: { title } }) => (
@@ -252,14 +257,13 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.emptySubtext}>Intenta ajustar tu búsqueda o filtros.</Text>
           </View>
         )}
-        // Optimización: le dice a la lista que no se mueva si solo cambian los items
         keyboardShouldPersistTaps="handled"
       />
     </SafeAreaView>
   );
 }
 
-// (Los estilos se quedan 100% igual que en la versión anterior)
+// --- 2. 'styles' MODIFICADOS ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -286,7 +290,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     paddingHorizontal: 18,
-    paddingTop: 10, // <-- Damos un poco de espacio
+    paddingTop: 10,
     paddingBottom: 5,
   },
   searchInputWrapper: {
@@ -307,8 +311,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#222222",
   },
+  // Corrección de alineación: Padding de la lista
   listContainer: {
-    // Ya no necesita padding horizontal, el <SectionList> lo maneja
+    paddingHorizontal: 18, 
     paddingBottom: 20,
   },
   categoriesCard: {
@@ -316,7 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 10,
     marginVertical: 15,
-    marginHorizontal: 18, // <-- Añadimos margen horizontal
+    // (Quitamos el 'marginHorizontal', ya lo maneja 'listContainer')
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -347,11 +352,13 @@ const styles = StyleSheet.create({
     color: "#555555",
     paddingHorizontal: 2,
   },
+
+  // --- ESTILOS DE TARJETA NUEVOS/MODIFICADOS ---
   cardContainer: {
     backgroundColor: "white",
     borderRadius: 12,
     marginBottom: 16,
-    marginHorizontal: 18, // <-- Añadimos margen horizontal
+    // (Quitamos 'marginHorizontal')
     borderWidth: 1,
     borderColor: "#E0E0E0",
     shadowColor: "#000",
@@ -359,28 +366,58 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
+    flexDirection: 'row', // <-- La clave del cambio
+    alignItems: 'center', // <-- Alinear logo y texto
+    padding: 12, // <-- Padding interno
   },
-  cardImage: {
-    width: "100%",
-    height: 180,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+  cardLogo: { // <-- Nuevo estilo (reemplaza 'cardImage')
+    width: 80,
+    height: 80,
+    borderRadius: 12, // <-- Bordes redondeados
+    marginRight: 12,
+    resizeMode: 'cover',
+  },
+  cardLogoPlaceholder: { // <-- Nuevo estilo
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    marginRight: 12,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardTextContainer: {
-    padding: 12,
+    flex: 1, // <-- Ocupa el espacio restante
+    padding: 0, // <-- Ya no necesita padding
   },
   cardTitle: {
-    fontSize: 20,
+    fontSize: 18, // <-- Un poco más pequeño
     fontWeight: "bold",
     color: "#222222",
   },
   cardCategory: {
     fontSize: 14,
-    color: "#555555",
+    color: "#007AFF", // <-- Usamos el azul de acento
+    marginTop: 2,
+    marginBottom: 6,
+  },
+  detailRow: { // <-- Nuevo estilo
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 4,
   },
+  detailIcon: { // <-- Nuevo estilo
+    marginRight: 5,
+  },
+  detailText: { // <-- Nuevo estilo
+    fontSize: 13,
+    color: '#555555',
+    flex: 1, // Para que se ajuste y no se desborde
+  },
+  // --- FIN DE ESTILOS DE TARJETA ---
+
   authButtonContainer: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 0, // <-- Quitamos padding, 'listContainer' lo maneja
     paddingTop: 15,
     paddingBottom: 5,
     gap: 10,
@@ -390,9 +427,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",
-  },
-  logoutButton: {
-    backgroundColor: "#8E8E93",
   },
   authButtonText: {
     color: "white",
@@ -406,7 +440,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     paddingTop: 15,
     paddingBottom: 10,
-    paddingHorizontal: 18, // <-- Añadimos padding horizontal
+    // (Quitamos 'paddingHorizontal', 'listContainer' lo maneja)
     borderBottomWidth: 1,
     borderColor: "#E0E0E0",
   },

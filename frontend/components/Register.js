@@ -8,14 +8,11 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
-
-// Tus imports de Firebase (intactos)
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig'; 
 
 const logo = require("../assets/logo2.png");
 
-// Toda tu lógica (intacta)
 const Register = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +30,14 @@ const Register = ({ navigation }) => {
     
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredential) => {
-        navigation.navigate("Home");
+        // --- INICIO DE LA MODIFICACIÓN ---
+        // Reseteamos el historial para que 'Home'
+        // sea la única pantalla y no haya "atrás".
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' }],
+        });
+        // --- FIN DE LA MODIFICACIÓN ---
       })
       .catch((error) => {
         let errorMessage = "Ocurrió un error al registrarte.";
@@ -48,13 +52,11 @@ const Register = ({ navigation }) => {
       });
   };
 
-  // Tu JSX (intacto)
+  // (El resto de tu JSX y estilos se quedan 100% igual)
   return (
     <View style={styles.container}>
       <Image source={logo} style={styles.logo} resizeMode="contain" />
-
       <Text style={styles.title}>Crear Cuenta</Text>
-
       <TextInput
         style={styles.input}
         placeholder="Correo electrónico"
@@ -87,7 +89,6 @@ const Register = ({ navigation }) => {
       >
         <Text style={styles.entrarTexto}>Registrarse</Text>
       </TouchableOpacity>
-
       <View style={styles.registerLinkContainer}>
         <Text style={styles.noCuenta}>¿Ya tienes una cuenta? </Text>
         <TouchableOpacity onPress={() => navigation.navigate("Login")}>
@@ -98,14 +99,13 @@ const Register = ({ navigation }) => {
   );
 };
 
-// --- INICIO DE LA MODIFICACIÓN DE ESTILOS ---
-// (Los estilos son casi idénticos a los de Login)
+// (Tus estilos se quedan 100% igual)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
     padding: 30,
-    backgroundColor: "#FFFFFF", // <-- Fondo blanco
+    backgroundColor: "#FFFFFF",
   },
   logo: {
     width: "80%",
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#222222", // <-- Título con negro suave
+    color: "#222222",
     textAlign: "center",
     marginBottom: 30,
   },
@@ -124,17 +124,17 @@ const styles = StyleSheet.create({
     height: 50,
     backgroundColor: "white",
     borderWidth: 1,
-    borderColor: "#E0E0E0", // <-- Borde gris claro
+    borderColor: "#E0E0E0",
     marginBottom: 15,
     paddingHorizontal: 15,
-    borderRadius: 8, // <-- Bordes más suaves
+    borderRadius: 8,
     fontSize: 16,
     color: "#222222",
   },
   entrarBoton: {
-    backgroundColor: "#007AFF", // <-- Color primario (Azul)
+    backgroundColor: "#007AFF",
     padding: 15,
-    borderRadius: 8, // <-- Bordes más suaves
+    borderRadius: 8,
     alignItems: "center",
     marginTop: 10,
   },
@@ -151,15 +151,14 @@ const styles = StyleSheet.create({
   },
   noCuenta: {
     fontSize: 16,
-    color: "#555555", // <-- Gris oscuro
+    color: "#555555",
   },
   registerText: {
-    color: "#007AFF", // <-- Color primario (Azul)
+    color: "#007AFF",
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 5,
   },
 });
-// --- FIN DE LA MODIFICACIÓN DE ESTILOS ---
 
 export default Register;
