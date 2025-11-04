@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
-  StyleSheet, Text, View, SafeAreaView, ScrollView,
+  StyleSheet, Text, View, ScrollView,
   TextInput, TouchableOpacity, Alert, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Picker } from '@react-native-picker/picker';
 import { db } from '../firebaseConfig';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore'; // (Quitamos serverTimestamp)

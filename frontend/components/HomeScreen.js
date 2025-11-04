@@ -5,13 +5,13 @@ import {
   View,
   SectionList,
   FlatList,
-  SafeAreaView,
   Image,
   ActivityIndicator,
   TouchableOpacity,
   TextInput,
   Alert,
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from "@expo/vector-icons"; // (Ya lo teníamos, ahora lo usamos más)
 import { useAuth } from "./AuthContext";
 import { signOut } from 'firebase/auth';

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  StyleSheet, Text, View, SafeAreaView, ScrollView, 
+  StyleSheet, Text, View, ScrollView, 
   Image, TouchableOpacity, FlatList, ActivityIndicator,
   Alert, Linking // <-- 1. Importamos 'Linking' para el teléfono/email
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './AuthContext';
 import { db } from '../firebaseConfig';
