@@ -41,7 +41,7 @@ export default function App() {
             options={({ navigation }) => ({
               headerTitle: () => (
                 <Image
-                  source={require("./assets/logo2.png")}
+                  source={require("./assets/icon.png")}
                   style={{ width: 120, height: 40, resizeMode: "contain" }}
                 />
               ),

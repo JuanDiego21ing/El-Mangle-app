@@ -15,7 +15,7 @@ import {
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig'; 
 
-const logo = require("../assets/logo2.png");
+const logo = require("../assets/icon.png");
 
 const Register = ({ navigation }) => {
   // (La lógica se queda 100% igual)
